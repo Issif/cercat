@@ -9,7 +9,7 @@ CertSteam <-----------------> certcat  +-----------> Slack
                             +----------+
 ```
 
-![screenshot](https://github.com/falcosecurity/falcosidekick/raw/master/screenshot.png)
+![screenshot](https://github.com/issif/cercat/raw/master/screenshot.png)
 
 It's highly inspired by [CertStreamMonitor](https://github.com/AssuranceMaladieSec/CertStreamMonitor/blob/master/README.md), the first idea was to improve performances for catching with a **Golang** version.
 
