@@ -1,0 +1,6 @@
+---
+SlackWebhookURL: "" #Slack Webhook URL
+SlackIconURL: "" #Slack Icon (Avatar) URL
+SlackUsername: "" #Slack Username
+Regexp: ".*\\.fr$" #Regexp to match. Can't be empty. It uses Golang regexp format.
+Workers: 20 #Number of workers for consuming stream from CertStream
