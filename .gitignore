@@ -1,2 +1,4 @@
 cercat
 config.yaml
+dist
+dist/**
