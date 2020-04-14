@@ -93,21 +93,15 @@ func certCheckWorker(msgChan <-chan []byte) {
 				SAN:       c.Data.LeafCert.AllDomains,
 				Addresses: []string{"N/A"},
 			}
-			for _, i := range c.Data.LeafCert.AllDomains {
-				ips, err := net.LookupIP(i)
-				if err != nil {
-					continue
-				}
+			ips, _ := net.LookupIP(r.Domain)
+			if len(ips) != 0 {
 				ipsList := []string{}
-				if len(ips) != 0 {
-					for _, j := range ips {
-						if regIP.MatchString(j.String()) {
-							ipsList = append(ipsList, j.String())
-						}
+				for _, j := range ips {
+					if regIP.MatchString(j.String()) {
+						ipsList = append(ipsList, j.String())
 					}
-					r.Addresses = ipsList
 				}
-				break
+				r.Addresses = ipsList
 			}
 			b, _ := json.Marshal(r)
 			log.Printf("[INFO]  : A certificate for '%v' has been issued : %v\n", r.Domain, string(b))

@@ -1,6 +1,6 @@
 # cercat
 
-`certcat` is for **Certificate Catcher**. It's monitores issued certificates from [CertStream](https://certstream.calidog.io/) stream and send an alert to **Slack** if a domain matchs a specified **regexp**.
+`certcat` is for **Certificate Catcher**. It's monitors issued certificates from [CertStream](https://certstream.calidog.io/) stream and send an alert to **Slack** if a domain matchs a specified **regexp**.
 
 ```bash
                websocket    +----------+   POST
@@ -46,6 +46,13 @@ usage: cercat [<flags>]
 Flags:
       --help                   Show context-sensitive help (also try --help-long and --help-man).
   -c, --configfile=CONFIGFILE  config file
+```
+
+## Logs
+
+```bash
+2020/04/14 17:29:40 [INFO]  : A certificate for 'www.XXXX.fr' has been issued : {"domain":"www.XXXX.fr","SAN":["www.XXXX.fr"],"issuer":"Let's Encrypt","Addresses":["XX.XX.XX.183","XX.XX.XX.182"]}
+2020/04/14 17:29:41 [INFO]  : A certificate for 'XXXX.fr' has been issued : {"domain":"XXXX.fr","SAN":["mail.XXXX.fr","XXXX.fr","www.XXXX.fr"],"issuer":"Let's Encrypt","Addresses":["XX.XX.XX.108"]}
 ```
 
 ## License
