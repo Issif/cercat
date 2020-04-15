@@ -17,6 +17,7 @@ type configuration struct {
 	SlackIconURL    string
 	SlackUsername   string
 	Regexp          string
+	DisplayErrors   string
 }
 
 func getConfig() *configuration {
@@ -31,6 +32,7 @@ func getConfig() *configuration {
 	v.SetDefault("SlackUsername", "Cercat")
 	v.SetDefault("Regexp", "")
 	v.SetDefault("Workers", 20)
+	v.SetDefault("DisplayErrors", "false")
 
 	if *configFile != "" {
 		d, f := path.Split(*configFile)
@@ -50,6 +52,9 @@ func getConfig() *configuration {
 
 	if c.SlackUsername == "" {
 		c.SlackUsername = "Cercat"
+	}
+	if c.DisplayErrors == "" {
+		c.DisplayErrors = "false"
 	}
 	if c.Regexp == "" {
 		log.Println("[ERROR] : Regexp can't be empty")

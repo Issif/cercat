@@ -80,7 +80,7 @@ func (s slackPayload) Post() {
 	req.Header.Add("Content-Type", "application/json")
 	client := &http.Client{}
 	_, err := client.Do(req)
-	if err != nil {
+	if err != nil && config.DisplayErrors == "true" {
 		log.Println("[ERROR] : Slack Post error")
 	}
 }

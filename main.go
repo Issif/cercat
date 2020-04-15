@@ -60,14 +60,18 @@ func main() {
 		defer ws.Close()
 
 		if err != nil {
-			log.Println("[INFO]  : Error connecting to certstream! Sleeping a few seconds and reconnecting...")
+			if config.DisplayErrors == "true" {
+				log.Println("[ERROR] : Error connecting to certstream! Sleeping a few seconds and reconnecting...")
+			}
 			time.Sleep(1 * time.Second)
 			continue
 		}
 		for {
 			_, msg, err := ws.ReadMessage()
 			if err != nil {
-				log.Println("[ERROR] : Error reading message")
+				if config.DisplayErrors == "true" {
+					log.Println("[ERROR] : Error reading message from CertStream")
+				}
 				break
 			}
 			msgChan <- msg
