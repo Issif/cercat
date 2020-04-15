@@ -68,7 +68,7 @@ func main() {
 			_, msg, err := ws.ReadMessage()
 			if err != nil {
 				log.Println("[ERROR] : Error reading message")
-				continue
+				break
 			}
 			msgChan <- msg
 		}
