@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net"
@@ -8,7 +9,13 @@ import (
 
 	"time"
 
-	"github.com/gorilla/websocket"
+	"net/http"
+	_ "net/http/pprof"
+
+	_ "expvar"
+
+	"github.com/gobwas/ws"
+	"github.com/gobwas/ws/wsutil"
 )
 
 type result struct {
@@ -50,24 +57,26 @@ func init() {
 }
 
 func main() {
+	go http.ListenAndServe("localhost:6060", nil)
+
 	msgChan := make(chan []byte, 10)
 	for i := 0; i < config.Workers; i++ {
 		go certCheckWorker(msgChan)
 	}
 
 	for {
-		ws, _, err := websocket.DefaultDialer.Dial("wss://certstream.calidog.io", nil)
-		defer ws.Close()
+		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), "wss://certstream.calidog.io")
 
 		if err != nil {
 			if config.DisplayErrors == "true" {
 				log.Println("[ERROR] : Error connecting to certstream! Sleeping a few seconds and reconnecting...")
 			}
+			conn.Close()
 			time.Sleep(1 * time.Second)
 			continue
 		}
 		for {
-			_, msg, err := ws.ReadMessage()
+			msg, _, err := wsutil.ReadServerData(conn)
 			if err != nil {
 				if config.DisplayErrors == "true" {
 					log.Println("[ERROR] : Error reading message from CertStream")
@@ -76,6 +85,7 @@ func main() {
 			}
 			msgChan <- msg
 		}
+		conn.Close()
 	}
 }
 
