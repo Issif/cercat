@@ -50,12 +50,24 @@ Flags:
   -c, --configfile=CONFIGFILE  config file
 ```
 
+## Docker
+
+You can run with Docker :
+
+```
+docker run -d -e SLACKWEBHOOKURL=https://hooks.slack.com/services/XXXXX -e REGEXP=".*fr$" issif/cercat:latest 
+```
+
 ## Logs
 
 ```bash
 2020/04/14 17:29:40 [INFO]  : A certificate for 'www.XXXX.fr' has been issued : {"domain":"www.XXXX.fr","SAN":["www.XXXX.fr"],"issuer":"Let's Encrypt","Addresses":["XX.XX.XX.183","XX.XX.XX.182"]}
 2020/04/14 17:29:41 [INFO]  : A certificate for 'XXXX.fr' has been issued : {"domain":"XXXX.fr","SAN":["mail.XXXX.fr","XXXX.fr","www.XXXX.fr"],"issuer":"Let's Encrypt","Addresses":["XX.XX.XX.108"]}
 ```
+
+## Profiles, Traces and Metrics
+
+The service opens port `6060` for `profiles`, `traces` and `expvar`. Go to [http://localhost:6060/debug/pprof](http://localhost:6060/debug/pprof) and [http://localhost:6060/debug/vars](http://localhost:6060/debug/vars).
 
 ## License
 
