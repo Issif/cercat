@@ -2,3 +2,4 @@ cercat
 config.yaml
 dist
 dist/**
+lib/*.xml

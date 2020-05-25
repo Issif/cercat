@@ -1,10 +1,12 @@
-package main
+package lib
 
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"net/http"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type slackAttachmentField struct {
@@ -28,7 +30,7 @@ type slackPayload struct {
 	Attachments []slackAttachment `json:"attachments,omitempty"`
 }
 
-func newSlackPayload(r result) slackPayload {
+func newSlackPayload(r Result, config *Configuration) slackPayload {
 	var attachments []slackAttachment
 	var attachment slackAttachment
 	var fields []slackAttachmentField
@@ -38,27 +40,20 @@ func newSlackPayload(r result) slackPayload {
 	field.Value = r.Domain
 	field.Short = true
 	fields = append(fields, field)
+
 	field.Title = "Issuer"
 	field.Value = r.Issuer
 	field.Short = true
 	fields = append(fields, field)
 
-	var s string
-	for _, i := range r.SAN {
-		s += i + ", "
-	}
 	field.Title = "SAN"
 	field.Short = false
-	field.Value = s[:len(s)-2]
+	field.Value = strings.Join(r.SAN, ",")
 	fields = append(fields, field)
 
-	s = ""
-	for _, i := range r.Addresses {
-		s += i + ", "
-	}
 	field.Title = "Addresses"
 	field.Short = false
-	field.Value = s[:len(s)-2]
+	field.Value = strings.Join(r.Addresses, ",")
 	fields = append(fields, field)
 
 	attachment.Fields = fields
@@ -74,13 +69,13 @@ func newSlackPayload(r result) slackPayload {
 		Attachments: attachments}
 }
 
-func (s slackPayload) Post() {
+func (s slackPayload) Post(config *Configuration) {
 	body, _ := json.Marshal(s)
 	req, _ := http.NewRequest(http.MethodPost, config.SlackWebHookURL, bytes.NewBuffer(body))
 	req.Header.Add("Content-Type", "application/json")
 	client := &http.Client{}
 	_, err := client.Do(req)
-	if err != nil && config.DisplayErrors == "true" {
-		log.Println("[ERROR] : Slack Post error")
+	if err != nil {
+		log.Warn("Slack Post error")
 	}
 }
