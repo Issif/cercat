@@ -1,17 +1,16 @@
 package lib
 
 import (
-	"fmt"
 	"path"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
+// Configuration represents a configuration element
 type Configuration struct {
 	Workers         int
 	SlackWebHookURL string
@@ -20,15 +19,15 @@ type Configuration struct {
 	DomainName      string
 	RegIP           string
 	Regexp          string
-	RegIDN          string
 	DisplayErrors   string
 }
 
-const RegStrIP = `^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$`
+const regStrIP = `^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$`
 
+// GetConfig provides a Configuration
 func GetConfig() *Configuration {
 	c := &Configuration{
-		RegIP: RegStrIP,
+		RegIP: regStrIP,
 	}
 
 	configFile := kingpin.Flag("configfile", "config file").Short('c').ExistingFile()
@@ -73,20 +72,9 @@ func GetConfig() *Configuration {
 	if _, err := regexp.Compile(c.Regexp); err != nil {
 		log.Fatal("Bad regexp")
 	}
-	if c.Workers < -1 {
+	if c.Workers < 1 {
 		log.Fatal("Workers must be strictly a positive number")
 	}
 
-	c.RegIDN = BuildIDNRegex(c.DomainName)
-
 	return c
-}
-
-func BuildIDNRegex(name string) string {
-	if len(name) < 2 {
-		return ""
-	}
-	// Can detect up to two unicode characters in the domain name.
-	// To adjust according to false positive rate & name length
-	return fmt.Sprintf("[%s]{%d,%d}", strings.ToLower(name), len(name)-2, len(name)-1)
 }

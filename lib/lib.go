@@ -60,7 +60,6 @@ const certInput = "wss://certstream.calidog.io"
 func CertCheckWorker(config *Configuration) {
 	reg, _ := regexp.Compile(config.Regexp)
 	regIP, _ := regexp.Compile(config.RegIP)
-	regIDN, _ := regexp.Compile(config.RegIDN)
 
 	for {
 		msg := <-MsgChan
@@ -73,7 +72,7 @@ func CertCheckWorker(config *Configuration) {
 		if detailedCert == nil {
 			continue
 		}
-		if !IsMatchingCert(detailedCert, reg, regIDN) {
+		if !IsMatchingCert(detailedCert, reg) {
 			continue
 		}
 		notify(config, *detailedCert)
@@ -115,13 +114,12 @@ func FetchIPAddresses(name string, regIP *regexp.Regexp) []string {
 	return ipsList
 }
 
-func IsMatchingCert(cert *Result, reg, regIDN *regexp.Regexp) bool {
-
+func IsMatchingCert(cert *Result, reg *regexp.Regexp) bool {
 	domainList := append(cert.SAN, cert.Domain)
 	for _, domain := range domainList {
-		if isIDN(domain) && regIDN.MatchString(domain) {
-			return true
-		}
+		// if isIDN(domain) {
+		// 	return true
+		// }
 		if reg.MatchString(domain) {
 			return true
 		}
