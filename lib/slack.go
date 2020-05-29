@@ -9,12 +9,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// slackAttachmentField
 type slackAttachmentField struct {
 	Title string `json:"title"`
 	Value string `json:"value"`
 	Short bool   `json:"short"`
 }
 
+// slackAttachment
 type slackAttachment struct {
 	Color  string                 `json:"color"`
 	Text   string                 `json:"text,omitempty"`
@@ -23,6 +25,7 @@ type slackAttachment struct {
 	// FooterIcon string                 `json:"footer_icon,omitempty"`
 }
 
+// slackPayload
 type slackPayload struct {
 	Text        string            `json:"text,omitempty"`
 	Username    string            `json:"username,omitempty"`
@@ -30,7 +33,8 @@ type slackPayload struct {
 	Attachments []slackAttachment `json:"attachments,omitempty"`
 }
 
-func newSlackPayload(r Result, config *Configuration) slackPayload {
+// newSlackPayload generates a new Slack Payload
+func newSlackPayload(r *result, config *Configuration) slackPayload {
 	var attachments []slackAttachment
 	var attachment slackAttachment
 	var fields []slackAttachmentField
@@ -69,7 +73,8 @@ func newSlackPayload(r Result, config *Configuration) slackPayload {
 		Attachments: attachments}
 }
 
-func (s slackPayload) Post(config *Configuration) {
+// post posts to Slack a Payload
+func (s slackPayload) post(config *Configuration) {
 	body, _ := json.Marshal(s)
 	req, _ := http.NewRequest(http.MethodPost, config.SlackWebHookURL, bytes.NewBuffer(body))
 	req.Header.Add("Content-Type", "application/json")

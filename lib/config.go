@@ -20,14 +20,13 @@ type Configuration struct {
 	RegIP           string
 	Regexp          string
 	DisplayErrors   string
+	Homoglyph       map[string]string
 }
-
-const regStrIP = `^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$`
 
 // GetConfig provides a Configuration
 func GetConfig() *Configuration {
 	c := &Configuration{
-		RegIP: regStrIP,
+		Homoglyph: getHomoglyphMap(),
 	}
 
 	configFile := kingpin.Flag("configfile", "config file").Short('c').ExistingFile()
@@ -66,9 +65,7 @@ func GetConfig() *Configuration {
 	if c.Regexp == "" {
 		log.Fatal("Regexp can't be empty")
 	}
-	if c.DomainName == "" {
-		log.Fatal("Specify the domain name to monitor for IDN homographs")
-	}
+
 	if _, err := regexp.Compile(c.Regexp); err != nil {
 		log.Fatal("Bad regexp")
 	}

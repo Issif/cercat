@@ -20,5 +20,5 @@ func main() {
 		go lib.CertCheckWorker(config)
 	}
 
-	lib.LoopCheckCerts(config)
+	lib.LoopCertStream(config)
 }
