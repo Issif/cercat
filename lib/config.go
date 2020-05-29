@@ -19,6 +19,7 @@ type Configuration struct {
 	DomainName      string
 	RegIP           string
 	Regexp          string
+	Deduplication   string
 	Homoglyph       map[string]string
 }
 

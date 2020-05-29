@@ -75,6 +75,10 @@ func CertCheckWorker(config *Configuration) {
 		if !isMatchingCert(config, detailedCert, reg) {
 			continue
 		}
+		if detailedCert.Domain == config.Deduplication {
+			continue
+		}
+		config.Deduplication = detailedCert.Domain
 		j, _ := json.Marshal(detailedCert)
 		log.Infof("A certificate for '%v' has been issued : %v\n", detailedCert.Domain, string(j))
 		if config.SlackWebHookURL != "" {

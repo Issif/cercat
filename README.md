@@ -28,7 +28,6 @@ SlackIconURL: "" #Slack Icon (Avatar) URL
 SlackUsername: "" #Slack Username
 Regexp: ".*\\.fr$" #Regexp to match. Can't be empty. It uses Golang regexp format
 Workers: 20 #Number of workers for consuming feed from CertStream
-DisplayErrors: false #Enable/Disable display of errors in logs
 ```
 
 ### With env vars
@@ -38,7 +37,6 @@ DisplayErrors: false #Enable/Disable display of errors in logs
 - **SLACKUSERNAME**: Slack Username
 - **REGEXP**: Regexp to match, if empty, '.*' is used. Use Golang regexp format
 - **WORKERS**: Number of workers for consuming feed from CertStream
-- **DISPLAYERRORS**: Enable/Disable display of errors in logs
 
 ## Run
 
