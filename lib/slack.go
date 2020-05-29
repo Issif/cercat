@@ -34,7 +34,7 @@ type slackPayload struct {
 }
 
 // newSlackPayload generates a new Slack Payload
-func newSlackPayload(r *result, config *Configuration) slackPayload {
+func newSlackPayload(config *Configuration, r *result) slackPayload {
 	var attachments []slackAttachment
 	var attachment slackAttachment
 	var fields []slackAttachmentField
@@ -66,11 +66,17 @@ func newSlackPayload(r *result, config *Configuration) slackPayload {
 
 	attachments = append(attachments, attachment)
 
+	domain := r.Domain
+	if r.IDN != "" {
+		domain += " (" + r.IDN + ")"
+	}
+
 	return slackPayload{
-		Text:        "A certificate for *" + r.Domain + "* has been issued",
+		Text:        "A certificate for *" + domain + "* has been issued",
 		Username:    config.SlackUsername,
 		IconURL:     config.SlackIconURL,
-		Attachments: attachments}
+		Attachments: attachments,
+	}
 }
 
 // post posts to Slack a Payload

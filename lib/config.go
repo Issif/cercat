@@ -19,7 +19,6 @@ type Configuration struct {
 	DomainName      string
 	RegIP           string
 	Regexp          string
-	DisplayErrors   string
 	Homoglyph       map[string]string
 }
 
@@ -59,9 +58,7 @@ func GetConfig() *Configuration {
 	if c.SlackUsername == "" {
 		c.SlackUsername = "Cercat"
 	}
-	if c.DisplayErrors == "" || c.DisplayErrors == "false" {
-		log.SetLevel(log.DebugLevel)
-	}
+
 	if c.Regexp == "" {
 		log.Fatal("Regexp can't be empty")
 	}

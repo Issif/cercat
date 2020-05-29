@@ -75,7 +75,13 @@ func CertCheckWorker(config *Configuration) {
 		if !isMatchingCert(config, detailedCert, reg) {
 			continue
 		}
-		slackPost(config, *detailedCert)
+		j, _ := json.Marshal(detailedCert)
+		log.Infof("A certificate for '%v' has been issued : %v\n", detailedCert.Domain, string(j))
+		if config.SlackWebHookURL != "" {
+			go func(c *Configuration, r *result) {
+				newSlackPayload(c, detailedCert).post(c)
+			}(config, detailedCert)
+		}
 	}
 }
 
@@ -132,27 +138,17 @@ func isMatchingCert(config *Configuration, cert *result, reg *regexp.Regexp) boo
 	for _, domain := range domainList {
 		if isIDN(domain) {
 			unicodeDomain, _ := idna.ToUnicode(domain)
-			cert.IDN = unicodeDomain
 			if reg.MatchString(replaceHomoglyph(unicodeDomain, config.Homoglyph)) {
+				cert.IDN = unicodeDomain
 				return true
 			}
+			continue
 		}
 		if reg.MatchString(domain) {
 			return true
 		}
 	}
 	return false
-}
-
-// slackPost posts event to Slack
-func slackPost(config *Configuration, detailedCert result) {
-	b, _ := json.Marshal(detailedCert)
-
-	if config.SlackWebHookURL != "" {
-		go newSlackPayload(&detailedCert, config).post(config)
-	} else {
-		log.Infof("A certificate for '%v' has been issued : %v\n", detailedCert.Domain, string(b))
-	}
 }
 
 // LoopCertStream gathers messages from CertStream
