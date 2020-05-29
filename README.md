@@ -4,7 +4,7 @@
 
 ```bash
                websocket    +----------+   POST
-CertSteam <-----------------> certcat  +-----------> Slack
+CertSteam <-----------------> cercat   +-----------> Slack
                             | (regexp) |
                             +----------+
 ```
