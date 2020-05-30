@@ -16,7 +16,6 @@ type Configuration struct {
 	SlackWebHookURL string
 	SlackIconURL    string
 	SlackUsername   string
-	DomainName      string
 	RegIP           string
 	Regexp          string
 	Deduplication   string
@@ -36,7 +35,6 @@ func GetConfig() *Configuration {
 	v.SetDefault("SlackWebhookURL", "")
 	v.SetDefault("SlackIconURL", "")
 	v.SetDefault("SlackUsername", "Cercat")
-	v.SetDefault("DomainName", "")
 	v.SetDefault("Regexp", "")
 	v.SetDefault("Workers", 20)
 
