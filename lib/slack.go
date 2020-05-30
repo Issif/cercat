@@ -34,7 +34,7 @@ type slackPayload struct {
 }
 
 // newSlackPayload generates a new Slack Payload
-func newSlackPayload(config *Configuration, r *result) slackPayload {
+func newSlackPayload(config *Configuration, r *Result) slackPayload {
 	var attachments []slackAttachment
 	var attachment slackAttachment
 	var fields []slackAttachmentField

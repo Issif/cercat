@@ -14,8 +14,8 @@ import (
 	"golang.org/x/net/idna"
 )
 
-// result represents a catched certificate
-type result struct {
+// Result represents a catched certificate
+type Result struct {
 	Domain    string   `json:"domain"`
 	IDN       string   `json:"IDN,omitempty"`
 	SAN       []string `json:"SAN"`
@@ -64,7 +64,7 @@ func CertCheckWorker(config *Configuration) {
 	for {
 		msg := <-MsgChan
 
-		detailedCert, err := parseResultCertificate(msg)
+		detailedCert, err := ParseResultCertificate(msg)
 		if err != nil {
 			log.Warnf("Error parsing message: %s", err)
 			continue
@@ -72,34 +72,31 @@ func CertCheckWorker(config *Configuration) {
 		if detailedCert == nil {
 			continue
 		}
-		if !isMatchingCert(config, detailedCert, reg) {
+		if !IsMatchingCert(config, detailedCert, reg) {
 			continue
 		}
-		if detailedCert.Domain == config.Deduplication {
-			continue
-		}
-		config.Deduplication = detailedCert.Domain
+
 		j, _ := json.Marshal(detailedCert)
 		log.Infof("A certificate for '%v' has been issued : %v\n", detailedCert.Domain, string(j))
 		if config.SlackWebHookURL != "" {
-			go func(c *Configuration, r *result) {
+			go func(c *Configuration, r *Result) {
 				newSlackPayload(c, detailedCert).post(c)
 			}(config, detailedCert)
 		}
 	}
 }
 
-// parseResultCertificate parses certificate details
-func parseResultCertificate(msg []byte) (*result, error) {
+// ParseResultCertificate parses certificate details
+func ParseResultCertificate(msg []byte) (*Result, error) {
 	var c certificate
-	var r *result
+	var r *Result
 
 	err := json.Unmarshal(msg, &c)
 	if err != nil || c.MessageType == "heartbeat" {
 		return nil, err
 	}
 
-	r = &result{
+	r = &Result{
 		Domain:    c.Data.LeafCert.Subject["CN"],
 		Issuer:    c.Data.Chain[0].Subject["O"],
 		SAN:       c.Data.LeafCert.AllDomains,
@@ -136,17 +133,13 @@ func isIDN(domain string) bool {
 	return strings.HasPrefix(domain, "xn--")
 }
 
-// isMatchingCert checks if certificate matches the regexp
-func isMatchingCert(config *Configuration, cert *result, reg *regexp.Regexp) bool {
+// IsMatchingCert checks if certificate matches the regexp
+func IsMatchingCert(config *Configuration, cert *Result, reg *regexp.Regexp) bool {
 	domainList := append(cert.SAN, cert.Domain)
 	for _, domain := range domainList {
 		if isIDN(domain) {
-			unicodeDomain, _ := idna.ToUnicode(domain)
-			if reg.MatchString(replaceHomoglyph(unicodeDomain, config.Homoglyph)) {
-				cert.IDN = unicodeDomain
-				return true
-			}
-			continue
+			cert.IDN, _ = idna.ToUnicode(domain)
+			domain = replaceHomoglyph(cert.IDN, config.Homoglyph)
 		}
 		if reg.MatchString(domain) {
 			return true

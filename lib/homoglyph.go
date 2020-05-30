@@ -4,8 +4,8 @@ import (
 	"github.com/picatz/homoglyphr"
 )
 
-// getHomoglyphMap generates a map of homoglyphs for replacement
-func getHomoglyphMap() map[string]string {
+// GetHomoglyphMap generates a map of homoglyphs for replacement
+func GetHomoglyphMap() map[string]string {
 	alphabet := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"}
 	homoglyph := map[string]string{}
 	for _, letter := range alphabet {

@@ -26,7 +26,7 @@ type Configuration struct {
 // GetConfig provides a Configuration
 func GetConfig() *Configuration {
 	c := &Configuration{
-		Homoglyph: getHomoglyphMap(),
+		Homoglyph: GetHomoglyphMap(),
 	}
 
 	configFile := kingpin.Flag("configfile", "config file").Short('c').ExistingFile()
@@ -39,7 +39,6 @@ func GetConfig() *Configuration {
 	v.SetDefault("DomainName", "")
 	v.SetDefault("Regexp", "")
 	v.SetDefault("Workers", 20)
-	v.SetDefault("DisplayErrors", "false")
 
 	if *configFile != "" {
 		d, f := path.Split(*configFile)
