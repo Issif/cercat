@@ -48,7 +48,7 @@ var _ = Describe("Handler", func() {
 			})
 		})
 		Describe("If message is heartbeat", func() {
-			msg, _ := ioutil.ReadFile("../res/heartbeat.json")
+			msg, _ := ioutil.ReadFile("./res/heartbeat.json")
 			It("should return nil", func() {
 				result, err := lib.ParseResultCertificate(msg)
 				Expect(result).To(BeNil())
@@ -56,7 +56,7 @@ var _ = Describe("Handler", func() {
 			})
 		})
 		Describe("If message is regular", func() {
-			msg, _ := ioutil.ReadFile("../res/cert.json")
+			msg, _ := ioutil.ReadFile("./res/cert.json")
 			It("should return valid infos", func() {
 				result, err := lib.ParseResultCertificate(msg)
 				Expect(result.Domain).Should(Equal("baden-mueller.de"))

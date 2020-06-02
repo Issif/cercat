@@ -53,9 +53,17 @@ type leafCert struct {
 
 // MsgChan is the communication channel between certCheckWorkers and LoopCertStream
 var MsgChan chan []byte
+var ReportChan chan Result
+var CertCache Cache
 
 // the websocket stream from calidog
 const certInput = "wss://certstream.calidog.io"
+
+func InitVars(limit int) {
+	MsgChan = make(chan []byte, limit)
+	ReportChan = make(chan Result, limit*2)
+	CertCache = GetNewCache(limit)
+}
 
 // CertCheckWorker parses certificates and raises alert if matches config
 func CertCheckWorker(config *Configuration) {
@@ -75,14 +83,29 @@ func CertCheckWorker(config *Configuration) {
 		if !IsMatchingCert(config, detailedCert, reg) {
 			continue
 		}
+		ReportChan <- *detailedCert
+	}
+}
 
-		j, _ := json.Marshal(detailedCert)
-		log.Infof("A certificate for '%v' has been issued : %v\n", detailedCert.Domain, string(j))
-		if config.SlackWebHookURL != "" {
-			go func(c *Configuration, r *Result) {
-				newSlackPayload(c, detailedCert).post(c)
-			}(config, detailedCert)
+func Report(config *Configuration) {
+
+	for {
+		cert := <-ReportChan
+		if CertCache.InCache(cert.Domain) {
+			continue
 		}
+		go notify(config, cert)
+		CertCache.StoreCache(cert.Domain)
+	}
+}
+
+func notify(config *Configuration, detailedCert Result) {
+	j, _ := json.Marshal(detailedCert)
+	log.Infof("A certificate for '%v' has been issued : %v\n", detailedCert.Domain, string(j))
+	if config.SlackWebHookURL != "" {
+		go func(c *Configuration, r Result) {
+			newSlackPayload(c, r).post(c)
+		}(config, detailedCert)
 	}
 }
 

@@ -15,10 +15,10 @@ func init() {
 
 func main() {
 	go http.ListenAndServe("localhost:6060", nil)
-	lib.MsgChan = make(chan []byte, 10)
+	lib.InitVars(config.Workers)
 	for i := 0; i < config.Workers; i++ {
 		go lib.CertCheckWorker(config)
 	}
-
+	go lib.Report(config)
 	lib.LoopCertStream(config)
 }
