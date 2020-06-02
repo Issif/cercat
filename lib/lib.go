@@ -63,26 +63,18 @@ func CertCheckWorker(config *Configuration) {
 
 	for {
 		msg := <-MsgChan
-
-		detailedCert, err := ParseResultCertificate(msg)
+		result, err := ParseResultCertificate(msg)
 		if err != nil {
 			log.Warnf("Error parsing message: %s", err)
 			continue
 		}
-		if detailedCert == nil {
+		if result == nil {
 			continue
 		}
-		if !IsMatchingCert(config, detailedCert, reg) {
+		if !IsMatchingCert(config, result, reg) {
 			continue
 		}
-
-		j, _ := json.Marshal(detailedCert)
-		log.Infof("A certificate for '%v' has been issued : %v\n", detailedCert.Domain, string(j))
-		if config.SlackWebHookURL != "" {
-			go func(c *Configuration, r *Result) {
-				newSlackPayload(c, detailedCert).post(c)
-			}(config, detailedCert)
-		}
+		config.Buffer <- result
 	}
 }
 
@@ -134,12 +126,12 @@ func isIDN(domain string) bool {
 }
 
 // IsMatchingCert checks if certificate matches the regexp
-func IsMatchingCert(config *Configuration, cert *Result, reg *regexp.Regexp) bool {
-	domainList := append(cert.SAN, cert.Domain)
+func IsMatchingCert(config *Configuration, result *Result, reg *regexp.Regexp) bool {
+	domainList := append(result.SAN, result.Domain)
 	for _, domain := range domainList {
 		if isIDN(domain) {
-			cert.IDN, _ = idna.ToUnicode(domain)
-			domain = replaceHomoglyph(cert.IDN, config.Homoglyph)
+			result.IDN, _ = idna.ToUnicode(domain)
+			domain = replaceHomoglyph(result.IDN, config.Homoglyph)
 		}
 		if reg.MatchString(domain) {
 			return true
@@ -165,6 +157,30 @@ func LoopCertStream(config *Configuration) {
 				break
 			}
 			MsgChan <- msg
+		}
+	}
+}
+
+// Notifier is a worker that receives cert, depduplicates and sends to Slack the event
+func Notifier(config *Configuration) {
+	for {
+		result := <-config.Buffer
+		duplicate := false
+		config.PreviousCerts.Do(func(d interface{}) {
+			if result.Domain == d {
+				duplicate = true
+			}
+		})
+		if !duplicate {
+			config.PreviousCerts = config.PreviousCerts.Prev()
+			config.PreviousCerts.Value = result.Domain
+			j, _ := json.Marshal(result)
+			log.Infof("A certificate for '%v' has been issued : %v\n", result.Domain, string(j))
+			if config.SlackWebHookURL != "" {
+				go func(c *Configuration, r *Result) {
+					newSlackPayload(c, result).post(c)
+				}(config, result)
+			}
 		}
 	}
 }

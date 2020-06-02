@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"container/ring"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -18,14 +19,17 @@ type Configuration struct {
 	SlackUsername   string
 	RegIP           string
 	Regexp          string
-	Deduplication   string
+	PreviousCerts   *ring.Ring
+	Buffer          chan *Result
 	Homoglyph       map[string]string
 }
 
 // GetConfig provides a Configuration
 func GetConfig() *Configuration {
 	c := &Configuration{
-		Homoglyph: GetHomoglyphMap(),
+		Homoglyph:     GetHomoglyphMap(),
+		PreviousCerts: ring.New(20),
+		Buffer:        make(chan *Result, 50),
 	}
 
 	configFile := kingpin.Flag("configfile", "config file").Short('c').ExistingFile()

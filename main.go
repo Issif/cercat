@@ -19,6 +19,6 @@ func main() {
 	for i := 0; i < config.Workers; i++ {
 		go lib.CertCheckWorker(config)
 	}
-
+	go lib.Notifier(config)
 	lib.LoopCertStream(config)
 }
