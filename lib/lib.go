@@ -51,9 +51,6 @@ type leafCert struct {
 	AllDomains   []string               `json:"all_domains"`
 }
 
-// MsgChan is the communication channel between certCheckWorkers and LoopCertStream
-var MsgChan chan []byte
-
 // the websocket stream from calidog
 const certInput = "wss://certstream.calidog.io"
 
@@ -62,7 +59,7 @@ func CertCheckWorker(config *Configuration) {
 	reg, _ := regexp.Compile(config.Regexp)
 
 	for {
-		msg := <-MsgChan
+		msg := <-config.Messages
 		result, err := ParseResultCertificate(msg)
 		if err != nil {
 			log.Warnf("Error parsing message: %s", err)
@@ -156,7 +153,7 @@ func LoopCertStream(config *Configuration) {
 				log.Warn("Error reading message from CertStream")
 				break
 			}
-			MsgChan <- msg
+			config.Messages <- msg
 		}
 	}
 }

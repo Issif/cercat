@@ -27,7 +27,6 @@ SlackWebhookURL: "" #Slack Webhook URL
 SlackIconURL: "" #Slack Icon (Avatar) URL
 SlackUsername: "" #Slack Username
 Regexp: ".*\\.fr$" #Regexp to match. Can't be empty. It uses Golang regexp format
-Workers: 20 #Number of workers for consuming feed from CertStream
 ```
 
 ### With env vars
@@ -36,7 +35,6 @@ Workers: 20 #Number of workers for consuming feed from CertStream
 - **SLACKICONURL**: Slack Icon (Avatar) URL
 - **SLACKUSERNAME**: Slack Username
 - **REGEXP**: Regexp to match, if empty, '.*' is used. Use Golang regexp format
-- **WORKERS**: Number of workers for consuming feed from CertStream
 
 ## Run
 

@@ -15,7 +15,6 @@ func init() {
 
 func main() {
 	go http.ListenAndServe("localhost:6060", nil)
-	lib.MsgChan = make(chan []byte, 10)
 	for i := 0; i < config.Workers; i++ {
 		go lib.CertCheckWorker(config)
 	}

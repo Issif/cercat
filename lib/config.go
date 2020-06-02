@@ -20,6 +20,7 @@ type Configuration struct {
 	RegIP           string
 	Regexp          string
 	PreviousCerts   *ring.Ring
+	Messages        chan []byte
 	Buffer          chan *Result
 	Homoglyph       map[string]string
 }
@@ -27,8 +28,10 @@ type Configuration struct {
 // GetConfig provides a Configuration
 func GetConfig() *Configuration {
 	c := &Configuration{
+		Workers:       50,
 		Homoglyph:     GetHomoglyphMap(),
 		PreviousCerts: ring.New(20),
+		Messages:      make(chan []byte, 50),
 		Buffer:        make(chan *Result, 50),
 	}
 
@@ -67,9 +70,6 @@ func GetConfig() *Configuration {
 
 	if _, err := regexp.Compile(c.Regexp); err != nil {
 		log.Fatal("Bad regexp")
-	}
-	if c.Workers < 1 {
-		log.Fatal("Workers must be strictly a positive number")
 	}
 
 	return c
