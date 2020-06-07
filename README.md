@@ -1,6 +1,6 @@
 # cercat
 
-`certcat` is for **Certificate Catcher**. It's monitors issued certificates from [CertStream](https://certstream.calidog.io/) stream and send an alert to **Slack** if a domain matchs a specified **regexp**.
+`certcat` is for **Certificate Catcher**. It monitors issued certificates from [CertStream](https://certstream.calidog.io/) stream and sends an alert to **Slack** if a domain matches a specified **regexp**.
 
 ```bash
                websocket    +----------+   POST
@@ -12,6 +12,8 @@ CertSteam <-----------------> cercat   +-----------> Slack
 ![screenshot](https://github.com/issif/cercat/raw/master/screenshot.png)
 
 It's highly inspired by [CertStreamMonitor](https://github.com/AssuranceMaladieSec/CertStreamMonitor/blob/master/README.md), the first idea was to improve performances for catching with a **Golang** version.
+
+The regexp is applied on principal an SAN domains. If one of these domains is an [IDN](https://en.wikipedia.org/wiki/Internationalized_domain_name), it's converted in an equivalend in ASCII before applying the regexp.
 
 ## Configuration
 
@@ -51,14 +53,14 @@ Flags:
 You can run with Docker :
 
 ```
-docker run -d -e SLACKWEBHOOKURL=https://hooks.slack.com/services/XXXXX -e REGEXP=".*fr$" issif/cercat:latest 
+docker run -d -e SLACKWEBHOOKURL=https://hooks.slack.com/services/XXXXX -e REGEXP=".*\\.fr$" issif/cercat:latest 
 ```
 
 ## Logs
 
 ```bash
-2020/04/14 17:29:40 [INFO]  : A certificate for 'www.XXXX.fr' has been issued : {"domain":"www.XXXX.fr","SAN":["www.XXXX.fr"],"issuer":"Let's Encrypt","Addresses":["XX.XX.XX.183","XX.XX.XX.182"]}
-2020/04/14 17:29:41 [INFO]  : A certificate for 'XXXX.fr' has been issued : {"domain":"XXXX.fr","SAN":["mail.XXXX.fr","XXXX.fr","www.XXXX.fr"],"issuer":"Let's Encrypt","Addresses":["XX.XX.XX.108"]}
+INFO[0005] A certificate for 'xxxx.fr' has been issued : {"domain":"xxxx.fr","SAN":["xxxx.fr","www.xxxx.fr"],"issuer":"Let's Encrypt","Addresses":["X.X.X.129"]} 
+INFO[0008] A certificate for 'xxxx.fr' has been issued : {"domain":"xxxx.fr","SAN":["xxxx.fr","www.xxxx.fr"],"issuer":"Let's Encrypt","Addresses":["X.X.X.116"]} 
 ```
 
 ## Profiles, Traces and Metrics
@@ -69,6 +71,8 @@ The service opens port `6060` for `profiles`, `traces` and `expvar`. Go to [http
 
 MIT
 
-## Author
+## Authors
 
 Thomas Labarussias - [@Issif](https://www.github.com/issif)
+Ayoul Elaassal - [@Ayoul3](https://github.com/ayoul3)
+

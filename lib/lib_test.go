@@ -23,7 +23,7 @@ var _ = Describe("Handler", func() {
 			})
 		})
 		Describe("If alternative subject matches", func() {
-			cert := &lib.Result{Domain: "www.test.net", SAN: []string{"www.test.com"}}
+			cert := &lib.Result{Domain: "www.tset.net", SAN: []string{"www.test.com"}}
 			It("should return true", func() {
 				result := lib.IsMatchingCert(config, cert, reg)
 				Expect(result).To(BeTrue())
