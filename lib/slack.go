@@ -1,18 +1,22 @@
-package main
+package lib
 
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"net/http"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
+// slackAttachmentField
 type slackAttachmentField struct {
 	Title string `json:"title"`
 	Value string `json:"value"`
 	Short bool   `json:"short"`
 }
 
+// slackAttachment
 type slackAttachment struct {
 	Color  string                 `json:"color"`
 	Text   string                 `json:"text,omitempty"`
@@ -21,6 +25,7 @@ type slackAttachment struct {
 	// FooterIcon string                 `json:"footer_icon,omitempty"`
 }
 
+// slackPayload
 type slackPayload struct {
 	Text        string            `json:"text,omitempty"`
 	Username    string            `json:"username,omitempty"`
@@ -28,7 +33,8 @@ type slackPayload struct {
 	Attachments []slackAttachment `json:"attachments,omitempty"`
 }
 
-func newSlackPayload(r result) slackPayload {
+// newSlackPayload generates a new Slack Payload
+func newSlackPayload(config *Configuration, r *Result) slackPayload {
 	var attachments []slackAttachment
 	var attachment slackAttachment
 	var fields []slackAttachmentField
@@ -38,27 +44,20 @@ func newSlackPayload(r result) slackPayload {
 	field.Value = r.Domain
 	field.Short = true
 	fields = append(fields, field)
+
 	field.Title = "Issuer"
 	field.Value = r.Issuer
 	field.Short = true
 	fields = append(fields, field)
 
-	var s string
-	for _, i := range r.SAN {
-		s += i + ", "
-	}
 	field.Title = "SAN"
 	field.Short = false
-	field.Value = s[:len(s)-2]
+	field.Value = strings.Join(r.SAN, ",")
 	fields = append(fields, field)
 
-	s = ""
-	for _, i := range r.Addresses {
-		s += i + ", "
-	}
 	field.Title = "Addresses"
 	field.Short = false
-	field.Value = s[:len(s)-2]
+	field.Value = strings.Join(r.Addresses, ",")
 	fields = append(fields, field)
 
 	attachment.Fields = fields
@@ -67,20 +66,27 @@ func newSlackPayload(r result) slackPayload {
 
 	attachments = append(attachments, attachment)
 
+	domain := r.Domain
+	if r.IDN != "" {
+		domain += " (" + r.IDN + ")"
+	}
+
 	return slackPayload{
-		Text:        "A certificate for *" + r.Domain + "* has been issued",
+		Text:        "A certificate for *" + domain + "* has been issued",
 		Username:    config.SlackUsername,
 		IconURL:     config.SlackIconURL,
-		Attachments: attachments}
+		Attachments: attachments,
+	}
 }
 
-func (s slackPayload) Post() {
+// post posts to Slack a Payload
+func (s slackPayload) post(config *Configuration) {
 	body, _ := json.Marshal(s)
 	req, _ := http.NewRequest(http.MethodPost, config.SlackWebHookURL, bytes.NewBuffer(body))
 	req.Header.Add("Content-Type", "application/json")
 	client := &http.Client{}
 	_, err := client.Do(req)
-	if err != nil && config.DisplayErrors == "true" {
-		log.Println("[ERROR] : Slack Post error")
+	if err != nil {
+		log.Warn("Slack Post error")
 	}
 }

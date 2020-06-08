@@ -1,27 +1,39 @@
-package main
+package lib
 
 import (
-	"log"
-	"os"
+	"container/ring"
 	"path"
 	"path/filepath"
 	"regexp"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
-type configuration struct {
+// Configuration represents a configuration element
+type Configuration struct {
 	Workers         int
 	SlackWebHookURL string
 	SlackIconURL    string
 	SlackUsername   string
+	RegIP           string
 	Regexp          string
-	DisplayErrors   string
+	PreviousCerts   *ring.Ring
+	Messages        chan []byte
+	Buffer          chan *Result
+	Homoglyph       map[string]string
 }
 
-func getConfig() *configuration {
-	c := &configuration{}
+// GetConfig provides a Configuration
+func GetConfig() *Configuration {
+	c := &Configuration{
+		Workers:       50,
+		Homoglyph:     GetHomoglyphMap(),
+		PreviousCerts: ring.New(20),
+		Messages:      make(chan []byte, 50),
+		Buffer:        make(chan *Result, 50),
+	}
 
 	configFile := kingpin.Flag("configfile", "config file").Short('c').ExistingFile()
 	kingpin.Parse()
@@ -32,7 +44,6 @@ func getConfig() *configuration {
 	v.SetDefault("SlackUsername", "Cercat")
 	v.SetDefault("Regexp", "")
 	v.SetDefault("Workers", 20)
-	v.SetDefault("DisplayErrors", "false")
 
 	if *configFile != "" {
 		d, f := path.Split(*configFile)
@@ -43,8 +54,7 @@ func getConfig() *configuration {
 		v.AddConfigPath(d)
 		err := v.ReadInConfig()
 		if err != nil {
-			log.Printf("[ERROR] : Error when reading config file : %v\n", err)
-			os.Exit(1)
+			log.Fatalf("[ERROR] : Error when reading config file : %v\n", err)
 		}
 	}
 	v.AutomaticEnv()
@@ -53,20 +63,13 @@ func getConfig() *configuration {
 	if c.SlackUsername == "" {
 		c.SlackUsername = "Cercat"
 	}
-	if c.DisplayErrors == "" {
-		c.DisplayErrors = "false"
-	}
+
 	if c.Regexp == "" {
-		log.Println("[ERROR] : Regexp can't be empty")
-		os.Exit(1)
+		log.Fatal("Regexp can't be empty")
 	}
+
 	if _, err := regexp.Compile(c.Regexp); err != nil {
-		log.Println("[ERROR] : Bad regexp")
-		os.Exit(1)
-	}
-	if c.Workers < -1 {
-		log.Println("[ERROR] : Workers must be strictly a positive number")
-		os.Exit(1)
+		log.Fatal("Bad regexp")
 	}
 
 	return c
