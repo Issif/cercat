@@ -3,6 +3,7 @@ package lib
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net"
 	"regexp"
 	"strings"
@@ -140,17 +141,25 @@ func IsMatchingCert(config *Configuration, result *Result, reg *regexp.Regexp) b
 // LoopCertStream gathers messages from CertStream
 func LoopCertStream(config *Configuration) {
 	for {
-		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), certInput)
-		defer conn.Close()
+		dial := ws.Dialer{
+			ReadBufferSize:  8192,
+			WriteBufferSize: 512,
+			Timeout:         1 * time.Second,
+		}
+		// conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), certInput)
+		conn, _, _, err := dial.Dial(context.Background(), certInput)
 		if err != nil {
+			fmt.Println(err)
 			log.Warn("Error connecting to CertStream! Sleeping a few seconds and reconnecting...")
 			time.Sleep(1 * time.Second)
 			continue
 		}
+		defer conn.Close()
 		for {
 			msg, _, err := wsutil.ReadServerData(conn)
 			if err != nil {
 				log.Warn("Error reading message from CertStream")
+				conn.Close()
 				break
 			}
 			config.Messages <- msg
