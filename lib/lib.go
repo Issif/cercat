@@ -139,12 +139,18 @@ func IsMatchingCert(config *Configuration, result *Result, reg *regexp.Regexp) b
 
 // LoopCertStream gathers messages from CertStream
 func LoopCertStream(config *Configuration) {
+	dial := ws.Dialer{
+		ReadBufferSize:  8192,
+		WriteBufferSize: 512,
+		Timeout:         1 * time.Second,
+	}
 	for {
-		conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), certInput)
-		defer conn.Close()
+		// conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), certInput)
+		conn, _, _, err := dial.Dial(context.Background(), certInput)
 		if err != nil {
 			log.Warn("Error connecting to CertStream! Sleeping a few seconds and reconnecting...")
 			time.Sleep(1 * time.Second)
+			conn.Close()
 			continue
 		}
 		for {
@@ -155,6 +161,7 @@ func LoopCertStream(config *Configuration) {
 			}
 			config.Messages <- msg
 		}
+		conn.Close()
 	}
 }
 
