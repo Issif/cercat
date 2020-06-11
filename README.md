@@ -13,7 +13,7 @@ CertSteam <-----------------> cercat   +-----------> Slack
 
 It's highly inspired by [CertStreamMonitor](https://github.com/AssuranceMaladieSec/CertStreamMonitor/blob/master/README.md), the first idea was to improve performances for catching with a **Golang** version.
 
-The regexp is applied on principal an SAN domains. If one of these domains is an [IDN](https://en.wikipedia.org/wiki/Internationalized_domain_name), it's converted in an equivalend in ASCII before applying the regexp.
+The regexp is applied on principal and SAN domains. If one of these domains is an [IDN](https://en.wikipedia.org/wiki/Internationalized_domain_name), it's converted in an equivalent in ASCII before applying the regexp.
 
 ## Configuration
 
@@ -36,7 +36,7 @@ Regexp: ".*\\.fr$" #Regexp to match. Can't be empty. It uses Golang regexp forma
 - **SLACKWEBHOOKURL**: Slack Webhook URL
 - **SLACKICONURL**: Slack Icon (Avatar) URL
 - **SLACKUSERNAME**: Slack Username
-- **REGEXP**: Regexp to match, if empty, '.*' is used. Use Golang regexp format
+- **REGEXP**: Regexp to match. Can't be empty. It uses Golang regexp format
 
 ## Run
 
