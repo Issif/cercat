@@ -1,4 +1,8 @@
-# cercat
+# Cercat
+
+![release](https://flat.badgen.net/github/release/issif/cercat/latest?color=green) ![last commit](https://flat.badgen.net/github/last-commit/issif/cercat) ![licence](https://flat.badgen.net/badge/license/MIT/blue) ![docker pulls](https://flat.badgen.net/docker/pulls/issif/cercat?icon=docker)
+
+## Description
 
 `certcat` is for **Certificate Catcher**. It monitors issued certificates from [CertStream](https://certstream.calidog.io/) stream and sends an alert to **Slack** if a domain matches a specified **regexp**.
 
