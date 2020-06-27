@@ -11,7 +11,9 @@ import (
 
 var _ = Describe("Handler", func() {
 	config := &lib.Configuration{
-		Homoglyph: lib.GetHomoglyphMap(),
+		Homoglyph:     lib.GetHomoglyphMap(),
+		SlackUsername: "test",
+		SlackIconURL:  "http://test",
 	}
 	reg, _ := regexp.Compile(".*test.*")
 	Describe("isMatchingCert", func() {
@@ -30,12 +32,23 @@ var _ = Describe("Handler", func() {
 			})
 		})
 		Describe("If domain is IDN", func() {
-			cert := &lib.Result{Domain: "xn--tst-rdd.com"}
+			cert := &lib.Result{Domain: "www.xn--tst-rdd.com"}
 			It("should return true", func() {
 				result := lib.IsMatchingCert(config, cert, reg)
 				Expect(result).To(BeTrue())
-				Expect(cert.IDN).To(Equal("tеst.com")) // e is cyrillic
+				Expect(cert.IDN).To(Equal("www.tеst.com")) // e is cyrillic
 			})
+		})
+	})
+	Describe("postToSlack", func() {
+		msg, _ := ioutil.ReadFile("../res/cert.json")
+		It("should return a valid payload", func() {
+			result, err := lib.ParseResultCertificate(msg)
+			slackPayload := lib.NewSlackPayload(config, result)
+			Expect(slackPayload.Text).Should(Equal("A certificate for *baden-mueller.de* has been issued"))
+			Expect(slackPayload.Username).Should(Equal("test"))
+			Expect(slackPayload.IconURL).Should(Equal("http://test"))
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 	Describe("parseResultCertificate", func() {
@@ -64,6 +77,18 @@ var _ = Describe("Handler", func() {
 				Expect(result.SAN).Should(Equal([]string{"baden-mueller.de", "www.baden-mueller.de"}))
 				Expect(result.Issuer).Should(Equal("Let's Encrypt"))
 				Expect(result.Addresses).Should(Equal([]string{"23.236.62.147"}))
+				Expect(err).ToNot(HaveOccurred())
+			})
+		})
+		Describe("If message is for IDN", func() {
+			msg, _ := ioutil.ReadFile("../res/cert_idn.json")
+			It("should return valid infos", func() {
+				result, err := lib.ParseResultCertificate(msg)
+				lib.IsMatchingCert(config, result, reg)
+				Expect(result.Domain).Should(Equal("xn--badn-mullr-msiec.de"))
+				Expect(result.IDN).Should(Equal("badеn-muеllеr.de")) // e is cyrillic
+				Expect(result.SAN).Should(Equal([]string{"xn--badn-mullr-msiec.de", "www.baden-mueller.de"}))
+				Expect(result.Issuer).Should(Equal("Let's Encrypt"))
 				Expect(err).ToNot(HaveOccurred())
 			})
 		})

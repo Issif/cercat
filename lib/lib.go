@@ -89,7 +89,7 @@ func ParseResultCertificate(msg []byte) (*Result, error) {
 		Domain:    c.Data.LeafCert.Subject["CN"],
 		Issuer:    c.Data.Chain[0].Subject["O"],
 		SAN:       c.Data.LeafCert.AllDomains,
-		Addresses: []string{"N/A"},
+		Addresses: []string{},
 	}
 	r.Addresses = fetchIPAddresses(r.Domain)
 	return r, nil
@@ -119,7 +119,13 @@ func fetchIPAddresses(name string) []string {
 
 // isIDN checks if domain is an IDN
 func isIDN(domain string) bool {
-	return strings.HasPrefix(domain, "xn--")
+	s := strings.Split(domain, ".")
+	for _, i := range s {
+		if strings.HasPrefix(i, "xn--") {
+			return true
+		}
+	}
+	return false
 }
 
 // IsMatchingCert checks if certificate matches the regexp
@@ -182,7 +188,7 @@ func Notifier(config *Configuration) {
 			log.Infof("A certificate for '%v' has been issued : %v\n", result.Domain, string(j))
 			if config.SlackWebHookURL != "" {
 				go func(c *Configuration, r *Result) {
-					newSlackPayload(c, result).post(c)
+					NewSlackPayload(c, result).post(c)
 				}(config, result)
 			}
 		}

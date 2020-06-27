@@ -25,16 +25,16 @@ type slackAttachment struct {
 	// FooterIcon string                 `json:"footer_icon,omitempty"`
 }
 
-// slackPayload
-type slackPayload struct {
+// SlackPayload represents a message to send to Slack
+type SlackPayload struct {
 	Text        string            `json:"text,omitempty"`
 	Username    string            `json:"username,omitempty"`
 	IconURL     string            `json:"icon_url,omitempty"`
 	Attachments []slackAttachment `json:"attachments,omitempty"`
 }
 
-// newSlackPayload generates a new Slack Payload
-func newSlackPayload(config *Configuration, r *Result) slackPayload {
+// NewSlackPayload generates a new Slack Payload
+func NewSlackPayload(config *Configuration, r *Result) SlackPayload {
 	var attachments []slackAttachment
 	var attachment slackAttachment
 	var fields []slackAttachmentField
@@ -50,14 +50,21 @@ func newSlackPayload(config *Configuration, r *Result) slackPayload {
 	field.Short = true
 	fields = append(fields, field)
 
+	if r.IDN != "" {
+		field.Title = "IDN"
+		field.Value = r.IDN
+		field.Short = true
+		fields = append(fields, field)
+	}
+
 	field.Title = "SAN"
 	field.Short = false
-	field.Value = strings.Join(r.SAN, ",")
+	field.Value = strings.Join(r.SAN, ", ")
 	fields = append(fields, field)
 
 	field.Title = "Addresses"
 	field.Short = false
-	field.Value = strings.Join(r.Addresses, ",")
+	field.Value = strings.Join(r.Addresses, ", ")
 	fields = append(fields, field)
 
 	attachment.Fields = fields
@@ -71,8 +78,8 @@ func newSlackPayload(config *Configuration, r *Result) slackPayload {
 		domain += " (" + r.IDN + ")"
 	}
 
-	return slackPayload{
-		Text:        "A certificate for *" + domain + "* has been issued",
+	return SlackPayload{
+		Text:        "A certificate for " + domain + " has been issued",
 		Username:    config.SlackUsername,
 		IconURL:     config.SlackIconURL,
 		Attachments: attachments,
@@ -80,7 +87,7 @@ func newSlackPayload(config *Configuration, r *Result) slackPayload {
 }
 
 // post posts to Slack a Payload
-func (s slackPayload) post(config *Configuration) {
+func (s SlackPayload) post(config *Configuration) {
 	body, _ := json.Marshal(s)
 	req, _ := http.NewRequest(http.MethodPost, config.SlackWebHookURL, bytes.NewBuffer(body))
 	req.Header.Add("Content-Type", "application/json")
