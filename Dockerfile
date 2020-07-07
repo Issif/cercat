@@ -24,6 +24,6 @@ USER 1234
 WORKDIR ${HOME}/
 COPY --from=build-stage /src/cercat .
 
-EXPOSE 2801
+EXPOSE 6060
 
 ENTRYPOINT ["./cercat"]
