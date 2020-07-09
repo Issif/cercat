@@ -1,6 +1,10 @@
 package lib
 
 import (
+	"cercat/config"
+	"cercat/pkg/homoglyph"
+	"cercat/pkg/model"
+	"cercat/pkg/slack"
 	"context"
 	"encoding/json"
 	"net"
@@ -14,52 +18,15 @@ import (
 	"golang.org/x/net/idna"
 )
 
-// Result represents a catched certificate
-type Result struct {
-	Domain    string   `json:"domain"`
-	IDN       string   `json:"IDN,omitempty"`
-	SAN       []string `json:"SAN"`
-	Issuer    string   `json:"issuer"`
-	Addresses []string `json:"Addresses"`
-}
-
-// certificate represents a certificate from CertStream
-type certificate struct {
-	MessageType string `json:"message_type"`
-	Data        data   `json:"data"`
-}
-
-// data represents data field for a certificate from CertStream
-type data struct {
-	UpdateType string            `json:"update_type"`
-	LeafCert   leafCert          `json:"leaf_cert"`
-	Chain      []leafCert        `json:"chain"`
-	CertIndex  float32           `json:"cert_index"`
-	Seen       float32           `json:"seen"`
-	Source     map[string]string `json:"source"`
-}
-
-// leafCert represents leaf_cert field from CertStream
-type leafCert struct {
-	Subject      map[string]string      `json:"subject"`
-	Extensions   map[string]interface{} `json:"extensions"`
-	NotBefore    float32                `json:"not_before"`
-	NotAfter     float32                `json:"not_after"`
-	SerialNumber string                 `json:"serial_number"`
-	FingerPrint  string                 `json:"fingerprint"`
-	AsDer        string                 `json:"as_der"`
-	AllDomains   []string               `json:"all_domains"`
-}
-
 // the websocket stream from calidog
 const certInput = "wss://certstream.calidog.io"
 
 // CertCheckWorker parses certificates and raises alert if matches config
-func CertCheckWorker(config *Configuration) {
-	reg, _ := regexp.Compile(config.Regexp)
+func CertCheckWorker(r string, homoglyph *map[string]string, msgChan chan []byte, bufferChan chan *model.Result) {
+	reg, _ := regexp.Compile(r)
 
 	for {
-		msg := <-config.Messages
+		msg := <-msgChan
 		result, err := ParseResultCertificate(msg)
 		if err != nil {
 			log.Warnf("Error parsing message: %s", err)
@@ -68,24 +35,24 @@ func CertCheckWorker(config *Configuration) {
 		if result == nil {
 			continue
 		}
-		if !IsMatchingCert(config, result, reg) {
+		if !IsMatchingCert(homoglyph, result, reg) {
 			continue
 		}
-		config.Buffer <- result
+		bufferChan <- result
 	}
 }
 
 // ParseResultCertificate parses certificate details
-func ParseResultCertificate(msg []byte) (*Result, error) {
-	var c certificate
-	var r *Result
+func ParseResultCertificate(msg []byte) (*model.Result, error) {
+	var c model.Certificate
+	var r *model.Result
 
 	err := json.Unmarshal(msg, &c)
 	if err != nil || c.MessageType == "heartbeat" {
 		return nil, err
 	}
 
-	r = &Result{
+	r = &model.Result{
 		Domain:    c.Data.LeafCert.Subject["CN"],
 		Issuer:    c.Data.Chain[0].Subject["O"],
 		SAN:       c.Data.LeafCert.AllDomains,
@@ -129,12 +96,12 @@ func isIDN(domain string) bool {
 }
 
 // IsMatchingCert checks if certificate matches the regexp
-func IsMatchingCert(config *Configuration, result *Result, reg *regexp.Regexp) bool {
+func IsMatchingCert(homoglyphs *map[string]string, result *model.Result, reg *regexp.Regexp) bool {
 	domainList := append(result.SAN, result.Domain)
 	for _, domain := range domainList {
 		if isIDN(domain) {
 			result.IDN, _ = idna.ToUnicode(domain)
-			domain = replaceHomoglyph(result.IDN, config.Homoglyph)
+			domain = homoglyph.ReplaceHomoglyph(result.IDN, *homoglyphs)
 		}
 		if reg.MatchString(domain) {
 			return true
@@ -144,7 +111,7 @@ func IsMatchingCert(config *Configuration, result *Result, reg *regexp.Regexp) b
 }
 
 // LoopCertStream gathers messages from CertStream
-func LoopCertStream(config *Configuration) {
+func LoopCertStream(msgBuf chan []byte) {
 	dial := ws.Dialer{
 		ReadBufferSize:  8192,
 		WriteBufferSize: 512,
@@ -165,31 +132,31 @@ func LoopCertStream(config *Configuration) {
 				log.Warn("Error reading message from CertStream")
 				break
 			}
-			config.Messages <- msg
+			msgBuf <- msg
 		}
 		conn.Close()
 	}
 }
 
 // Notifier is a worker that receives cert, depduplicates and sends to Slack the event
-func Notifier(config *Configuration) {
+func Notifier(cfg *config.Configuration) {
 	for {
-		result := <-config.Buffer
+		result := <-cfg.Buffer
 		duplicate := false
-		config.PreviousCerts.Do(func(d interface{}) {
+		cfg.PreviousCerts.Do(func(d interface{}) {
 			if result.Domain == d {
 				duplicate = true
 			}
 		})
 		if !duplicate {
-			config.PreviousCerts = config.PreviousCerts.Prev()
-			config.PreviousCerts.Value = result.Domain
+			cfg.PreviousCerts = cfg.PreviousCerts.Prev()
+			cfg.PreviousCerts.Value = result.Domain
 			j, _ := json.Marshal(result)
 			log.Infof("A certificate for '%v' has been issued : %v\n", result.Domain, string(j))
-			if config.SlackWebHookURL != "" {
-				go func(c *Configuration, r *Result) {
-					NewSlackPayload(c, result).post(c)
-				}(config, result)
+			if cfg.SlackWebHookURL != "" {
+				go func(c *config.Configuration, r *model.Result) {
+					slack.NewPayload(c, result).Post(c)
+				}(cfg, result)
 			}
 		}
 	}

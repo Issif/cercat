@@ -1,7 +1,9 @@
-package lib
+package slack
 
 import (
 	"bytes"
+	"cercat/config"
+	"cercat/pkg/model"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -9,36 +11,36 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// slackAttachmentField
-type slackAttachmentField struct {
+// AttachmentField
+type AttachmentField struct {
 	Title string `json:"title"`
 	Value string `json:"value"`
 	Short bool   `json:"short"`
 }
 
-// slackAttachment
-type slackAttachment struct {
-	Color  string                 `json:"color"`
-	Text   string                 `json:"text,omitempty"`
-	Fields []slackAttachmentField `json:"fields"`
+// Attachment
+type Attachment struct {
+	Color  string            `json:"color"`
+	Text   string            `json:"text,omitempty"`
+	Fields []AttachmentField `json:"fields"`
 	// Footer     string                 `json:"footer,omitempty"`
 	// FooterIcon string                 `json:"footer_icon,omitempty"`
 }
 
-// SlackPayload represents a message to send to Slack
-type SlackPayload struct {
-	Text        string            `json:"text,omitempty"`
-	Username    string            `json:"username,omitempty"`
-	IconURL     string            `json:"icon_url,omitempty"`
-	Attachments []slackAttachment `json:"attachments,omitempty"`
+// Payload represents a message to send to Slack
+type Payload struct {
+	Text        string       `json:"text,omitempty"`
+	Username    string       `json:"username,omitempty"`
+	IconURL     string       `json:"icon_url,omitempty"`
+	Attachments []Attachment `json:"attachments,omitempty"`
 }
 
-// NewSlackPayload generates a new Slack Payload
-func NewSlackPayload(config *Configuration, r *Result) SlackPayload {
-	var attachments []slackAttachment
-	var attachment slackAttachment
-	var fields []slackAttachmentField
-	var field slackAttachmentField
+// NewPayload generates a new Slack Payload
+func NewPayload(config *config.Configuration, r *model.Result) Payload {
+	var attachments []Attachment
+	var attachment Attachment
+	var fields []AttachmentField
+	var field AttachmentField
 
 	field.Title = "Domain"
 	field.Value = r.Domain
@@ -78,7 +80,7 @@ func NewSlackPayload(config *Configuration, r *Result) SlackPayload {
 		domain += " (" + r.IDN + ")"
 	}
 
-	return SlackPayload{
+	return Payload{
 		Text:        "A certificate for " + domain + " has been issued",
 		Username:    config.SlackUsername,
 		IconURL:     config.SlackIconURL,
@@ -86,8 +88,8 @@ func NewSlackPayload(config *Configuration, r *Result) SlackPayload {
 	}
 }
 
-// post posts to Slack a Payload
-func (s SlackPayload) post(config *Configuration) {
+// Post posts to Slack a Payload
+func (s Payload) Post(config *config.Configuration) {
 	body, _ := json.Marshal(s)
 	req, _ := http.NewRequest(http.MethodPost, config.SlackWebHookURL, bytes.NewBuffer(body))
 	req.Header.Add("Content-Type", "application/json")
