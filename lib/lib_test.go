@@ -1,7 +1,11 @@
 package lib_test
 
 import (
+	"cercat/config"
 	"cercat/lib"
+	"cercat/pkg/homoglyph"
+	"cercat/pkg/model"
+	"cercat/pkg/slack"
 	"io/ioutil"
 	"regexp"
 
@@ -10,31 +14,31 @@ import (
 )
 
 var _ = Describe("Handler", func() {
-	config := &lib.Configuration{
-		Homoglyph:     lib.GetHomoglyphMap(),
+	config := &config.Configuration{
+		Homoglyph:     homoglyph.GetHomoglyphMap(),
 		SlackUsername: "test",
 		SlackIconURL:  "http://test",
 	}
 	reg, _ := regexp.Compile(".*test.*")
 	Describe("isMatchingCert", func() {
 		Describe("If certificate matches", func() {
-			cert := &lib.Result{Domain: "www.test.com"}
+			cert := &model.Result{Domain: "www.test.com"}
 			It("should return true", func() {
-				result := lib.IsMatchingCert(config, cert, reg)
+				result := lib.IsMatchingCert(&config.Homoglyph, cert, reg)
 				Expect(result).To(BeTrue())
 			})
 		})
 		Describe("If alternative subject matches", func() {
-			cert := &lib.Result{Domain: "www.tset.net", SAN: []string{"www.test.com"}}
+			cert := &model.Result{Domain: "www.tset.net", SAN: []string{"www.test.com"}}
 			It("should return true", func() {
-				result := lib.IsMatchingCert(config, cert, reg)
+				result := lib.IsMatchingCert(&config.Homoglyph, cert, reg)
 				Expect(result).To(BeTrue())
 			})
 		})
 		Describe("If domain is IDN", func() {
-			cert := &lib.Result{Domain: "www.xn--tst-rdd.com"}
+			cert := &model.Result{Domain: "www.xn--tst-rdd.com"}
 			It("should return true", func() {
-				result := lib.IsMatchingCert(config, cert, reg)
+				result := lib.IsMatchingCert(&config.Homoglyph, cert, reg)
 				Expect(result).To(BeTrue())
 				Expect(cert.IDN).To(Equal("www.tеst.com")) // e is cyrillic
 			})
@@ -44,8 +48,8 @@ var _ = Describe("Handler", func() {
 		msg, _ := ioutil.ReadFile("../res/cert.json")
 		It("should return a valid payload", func() {
 			result, err := lib.ParseResultCertificate(msg)
-			slackPayload := lib.NewSlackPayload(config, result)
-			Expect(slackPayload.Text).Should(Equal("A certificate for *baden-mueller.de* has been issued"))
+			slackPayload := slack.NewPayload(config, result)
+			Expect(slackPayload.Text).Should(Equal("A certificate for baden-mueller.de has been issued"))
 			Expect(slackPayload.Username).Should(Equal("test"))
 			Expect(slackPayload.IconURL).Should(Equal("http://test"))
 			Expect(err).ToNot(HaveOccurred())
@@ -84,7 +88,7 @@ var _ = Describe("Handler", func() {
 			msg, _ := ioutil.ReadFile("../res/cert_idn.json")
 			It("should return valid infos", func() {
 				result, err := lib.ParseResultCertificate(msg)
-				lib.IsMatchingCert(config, result, reg)
+				lib.IsMatchingCert(&config.Homoglyph, result, reg)
 				Expect(result.Domain).Should(Equal("xn--badn-mullr-msiec.de"))
 				Expect(result.IDN).Should(Equal("badеn-muеllеr.de")) // e is cyrillic
 				Expect(result.SAN).Should(Equal([]string{"xn--badn-mullr-msiec.de", "www.baden-mueller.de"}))

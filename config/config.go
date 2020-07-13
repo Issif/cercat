@@ -1,6 +1,8 @@
-package lib
+package config
 
 import (
+	"cercat/pkg/homoglyph"
+	"cercat/pkg/model"
 	"container/ring"
 	"path"
 	"path/filepath"
@@ -8,7 +10,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 // Configuration represents a configuration element
@@ -21,22 +22,19 @@ type Configuration struct {
 	Regexp          string
 	PreviousCerts   *ring.Ring
 	Messages        chan []byte
-	Buffer          chan *Result
+	Buffer          chan *model.Result
 	Homoglyph       map[string]string
 }
 
 // GetConfig provides a Configuration
-func GetConfig() *Configuration {
+func GetConfig(configFile *string) *Configuration {
 	c := &Configuration{
 		Workers:       50,
-		Homoglyph:     GetHomoglyphMap(),
+		Homoglyph:     homoglyph.GetHomoglyphMap(),
 		PreviousCerts: ring.New(20),
 		Messages:      make(chan []byte, 50),
-		Buffer:        make(chan *Result, 50),
+		Buffer:        make(chan *model.Result, 50),
 	}
-
-	configFile := kingpin.Flag("configfile", "config file").Short('c').ExistingFile()
-	kingpin.Parse()
 
 	v := viper.New()
 	v.SetDefault("SlackWebhookURL", "")

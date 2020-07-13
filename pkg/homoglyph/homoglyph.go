@@ -1,4 +1,4 @@
-package lib
+package homoglyph
 
 import (
 	"github.com/picatz/homoglyphr"
@@ -16,8 +16,8 @@ func GetHomoglyphMap() map[string]string {
 	return homoglyph
 }
 
-// replaceHomoglyph replaces homoglyphs in a string by close latin letters
-func replaceHomoglyph(idn string, homoglyphMap map[string]string) string {
+// ReplaceHomoglyph replaces homoglyphs in a string by close latin letters
+func ReplaceHomoglyph(idn string, homoglyphMap map[string]string) string {
 	var s string
 	for _, i := range idn {
 		if i > 127 {
