@@ -11,34 +11,39 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"golang.org/x/net/idna"
 )
 
 var _ = Describe("Handler", func() {
 	config := &config.Configuration{
-		Homoglyph:     homoglyph.GetHomoglyphMap(),
+		Homoglyphs: homoglyph.GetHomoglyphMap(),
+		Regexp: map[string][]*regexp.Regexp{
+			"test": config.GetRegexpList("test"),
+		},
 		SlackUsername: "test",
 		SlackIconURL:  "http://test",
 	}
-	reg, _ := regexp.Compile(".*test.*")
 	Describe("isMatchingCert", func() {
 		Describe("If certificate matches", func() {
 			cert := &model.Result{Domain: "www.test.com"}
 			It("should return true", func() {
-				result := lib.IsMatchingCert(&config.Homoglyph, cert, reg)
+				result := lib.IsMatchingCert(cert, config.Regexp)
 				Expect(result).To(BeTrue())
 			})
 		})
 		Describe("If alternative subject matches", func() {
 			cert := &model.Result{Domain: "www.tset.net", SAN: []string{"www.test.com"}}
 			It("should return true", func() {
-				result := lib.IsMatchingCert(&config.Homoglyph, cert, reg)
+				result := lib.IsMatchingCert(cert, config.Regexp)
 				Expect(result).To(BeTrue())
 			})
 		})
 		Describe("If domain is IDN", func() {
 			cert := &model.Result{Domain: "www.xn--tst-rdd.com"}
+			cert.IDN, _ = idna.ToUnicode(cert.Domain)
+			cert.UnicodeIDN = homoglyph.ReplaceHomoglyph(cert.IDN, config.Homoglyphs)
 			It("should return true", func() {
-				result := lib.IsMatchingCert(&config.Homoglyph, cert, reg)
+				result := lib.IsMatchingCert(cert, config.Regexp)
 				Expect(result).To(BeTrue())
 				Expect(cert.IDN).To(Equal("www.tеst.com")) // e is cyrillic
 			})
@@ -47,7 +52,7 @@ var _ = Describe("Handler", func() {
 	Describe("postToSlack", func() {
 		msg, _ := ioutil.ReadFile("../res/cert.json")
 		It("should return a valid payload", func() {
-			result, err := lib.ParseResultCertificate(msg)
+			result, err := lib.ParseResultCertificate(msg, &config.Homoglyphs)
 			slackPayload := slack.NewPayload(config, result)
 			Expect(slackPayload.Text).Should(Equal("A certificate for baden-mueller.de has been issued"))
 			Expect(slackPayload.Username).Should(Equal("test"))
@@ -59,7 +64,7 @@ var _ = Describe("Handler", func() {
 		Describe("If cannot marshall message", func() {
 			msg := []byte("")
 			It("should return nil and error", func() {
-				result, err := lib.ParseResultCertificate(msg)
+				result, err := lib.ParseResultCertificate(msg, &config.Homoglyphs)
 				Expect(result).To(BeNil())
 				Expect(err).To(HaveOccurred())
 			})
@@ -67,7 +72,7 @@ var _ = Describe("Handler", func() {
 		Describe("If message is heartbeat", func() {
 			msg, _ := ioutil.ReadFile("../res/heartbeat.json")
 			It("should return nil", func() {
-				result, err := lib.ParseResultCertificate(msg)
+				result, err := lib.ParseResultCertificate(msg, &config.Homoglyphs)
 				Expect(result).To(BeNil())
 				Expect(err).ToNot(HaveOccurred())
 			})
@@ -75,7 +80,7 @@ var _ = Describe("Handler", func() {
 		Describe("If message is regular", func() {
 			msg, _ := ioutil.ReadFile("../res/cert.json")
 			It("should return valid infos", func() {
-				result, err := lib.ParseResultCertificate(msg)
+				result, err := lib.ParseResultCertificate(msg, &config.Homoglyphs)
 				Expect(result.Domain).Should(Equal("baden-mueller.de"))
 				Expect(result.IDN).Should(Equal(""))
 				Expect(result.SAN).Should(Equal([]string{"baden-mueller.de", "www.baden-mueller.de"}))
@@ -87,8 +92,8 @@ var _ = Describe("Handler", func() {
 		Describe("If message is for IDN", func() {
 			msg, _ := ioutil.ReadFile("../res/cert_idn.json")
 			It("should return valid infos", func() {
-				result, err := lib.ParseResultCertificate(msg)
-				lib.IsMatchingCert(&config.Homoglyph, result, reg)
+				result, err := lib.ParseResultCertificate(msg, &config.Homoglyphs)
+				lib.IsMatchingCert(result, config.Regexp)
 				Expect(result.Domain).Should(Equal("xn--badn-mullr-msiec.de"))
 				Expect(result.IDN).Should(Equal("badеn-muеllеr.de")) // e is cyrillic
 				Expect(result.SAN).Should(Equal([]string{"xn--badn-mullr-msiec.de", "www.baden-mueller.de"}))

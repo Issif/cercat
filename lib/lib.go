@@ -22,12 +22,10 @@ import (
 const certInput = "wss://certstream.calidog.io"
 
 // CertCheckWorker parses certificates and raises alert if matches config
-func CertCheckWorker(r string, homoglyph *map[string]string, msgChan chan []byte, bufferChan chan *model.Result) {
-	reg, _ := regexp.Compile(r)
-
+func CertCheckWorker(msgChan chan []byte, bufferChan chan *model.Result, regexp map[string][]*regexp.Regexp, homoglyphs *map[string]string) {
 	for {
 		msg := <-msgChan
-		result, err := ParseResultCertificate(msg)
+		result, err := ParseResultCertificate(msg, homoglyphs)
 		if err != nil {
 			log.Warnf("Error parsing message: %s", err)
 			continue
@@ -35,15 +33,14 @@ func CertCheckWorker(r string, homoglyph *map[string]string, msgChan chan []byte
 		if result == nil {
 			continue
 		}
-		if !IsMatchingCert(homoglyph, result, reg) {
-			continue
+		if IsMatchingCert(result, regexp) {
+			bufferChan <- result
 		}
-		bufferChan <- result
 	}
 }
 
 // ParseResultCertificate parses certificate details
-func ParseResultCertificate(msg []byte) (*model.Result, error) {
+func ParseResultCertificate(msg []byte, homoglyphs *map[string]string) (*model.Result, error) {
 	var c model.Certificate
 	var r *model.Result
 
@@ -59,6 +56,11 @@ func ParseResultCertificate(msg []byte) (*model.Result, error) {
 		Addresses: []string{},
 	}
 	r.Addresses = fetchIPAddresses(r.Domain)
+	if isIDN(r.Domain) {
+		r.IDN, _ = idna.ToUnicode(r.Domain)
+		r.UnicodeIDN = homoglyph.ReplaceHomoglyph(r.IDN, *homoglyphs)
+	}
+
 	return r, nil
 }
 
@@ -96,15 +98,19 @@ func isIDN(domain string) bool {
 }
 
 // IsMatchingCert checks if certificate matches the regexp
-func IsMatchingCert(homoglyphs *map[string]string, result *model.Result, reg *regexp.Regexp) bool {
+func IsMatchingCert(result *model.Result, regexp map[string][]*regexp.Regexp) bool {
 	domainList := append(result.SAN, result.Domain)
+	if len(result.UnicodeIDN) != 0 {
+		domainList = append(domainList, result.UnicodeIDN)
+	}
 	for _, domain := range domainList {
-		if isIDN(domain) {
-			result.IDN, _ = idna.ToUnicode(domain)
-			domain = homoglyph.ReplaceHomoglyph(result.IDN, *homoglyphs)
-		}
-		if reg.MatchString(domain) {
-			return true
+		domain = strings.ReplaceAll(domain, ".", "")
+		for _, i := range regexp {
+			for _, j := range i {
+				if j.Match([]byte(domain)) {
+					return true
+				}
+			}
 		}
 	}
 	return false
@@ -138,7 +144,7 @@ func LoopCertStream(msgBuf chan []byte) {
 	}
 }
 
-// Notifier is a worker that receives cert, depduplicates and sends to Slack the event
+// Notifier is a worker that receives cert, deduplicates and sends to Slack the event
 func Notifier(cfg *config.Configuration) {
 	for {
 		result := <-cfg.Buffer

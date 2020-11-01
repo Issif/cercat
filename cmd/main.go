@@ -27,7 +27,7 @@ func main() {
 	cfg := config.GetConfig(configFile)
 	go http.ListenAndServe("localhost:6060", nil)
 	for i := 0; i < cfg.Workers; i++ {
-		go lib.CertCheckWorker(cfg.Regexp, &cfg.Homoglyph, cfg.Messages, cfg.Buffer)
+		go lib.CertCheckWorker(cfg.Messages, cfg.Buffer, cfg.Regexp, &cfg.Homoglyphs)
 	}
 	go lib.Notifier(cfg)
 	lib.LoopCertStream(cfg.Messages)

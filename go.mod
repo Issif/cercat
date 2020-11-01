@@ -6,6 +6,7 @@ require (
 	github.com/gobwas/httphead v0.0.0-20180130184737-2c6c146eadee // indirect
 	github.com/gobwas/pool v0.2.0 // indirect
 	github.com/gobwas/ws v1.0.3
+	github.com/lithammer/fuzzysearch v1.1.1
 	github.com/onsi/ginkgo v1.12.2
 	github.com/onsi/gomega v1.10.1
 	github.com/picatz/homoglyphr v0.0.0-20180114170158-6e9a0e190785
