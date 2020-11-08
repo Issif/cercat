@@ -9,7 +9,6 @@ import (
 	"cercat/pkg/transposition"
 	"cercat/pkg/vowelswap"
 	"container/ring"
-	"fmt"
 	"path"
 	"path/filepath"
 	"strings"
@@ -47,6 +46,7 @@ func GetConfig(configFile *string) *Configuration {
 		Messages:              make(chan []byte, 50),
 		Buffer:                make(chan *model.Result, 50),
 		HomoglyphPatterns:     homoglyph.GetHomoglyphMap(),
+		InclusionPatterns:     make(map[string][]string),
 		OmissionPatterns:      make(map[string][]string),
 		RepetitionPatterns:    make(map[string][]string),
 		BitsquattingPatterns:  make(map[string][]string),
@@ -87,14 +87,12 @@ func GetConfig(configFile *string) *Configuration {
 	for _, domain := range c.Domains {
 		p, _ := publicsuffix.PublicSuffix(domain)
 		s := strings.Split(strings.ReplaceAll(strings.ReplaceAll(domain, "."+p, ""), "-", ""), ".")
-		c.InclusionPatterns[domain] = []string{"s"}
+		c.InclusionPatterns[domain] = []string{s[len(s)-1]}
 		c.OmissionPatterns[domain] = omission.GetOmissionPatterns(s[len(s)-1])
 		c.RepetitionPatterns[domain] = repetition.GetRepetitionPatterns(s[len(s)-1])
 		c.BitsquattingPatterns[domain] = bitsquatting.GetBitsquattingPatterns(s[len(s)-1])
 		c.TranspositionPatterns[domain] = transposition.GetTranspositionPatterns(s[len(s)-1])
 		c.VowelSwapPatterns[domain] = vowelswap.GetVowelSwapPatterns(s[len(s)-1])
 	}
-
-	fmt.Printf("%#v\n", c.BitsquattingPatterns)
 	return c
 }

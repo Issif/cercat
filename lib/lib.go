@@ -48,7 +48,6 @@ func ParseResultCertificate(msg []byte, homoglyphs *map[string]string) (*model.R
 	if err != nil || c.MessageType == "heartbeat" {
 		return nil, err
 	}
-
 	r = &model.Result{
 		Domain:    c.Data.LeafCert.Subject["CN"],
 		Issuer:    c.Data.Chain[0].Subject["O"],
@@ -60,7 +59,6 @@ func ParseResultCertificate(msg []byte, homoglyphs *map[string]string) (*model.R
 		r.IDN, _ = idna.ToUnicode(r.Domain)
 		r.UnicodeIDN = homoglyph.ReplaceHomoglyph(r.IDN, *homoglyphs)
 	}
-
 	return r, nil
 }
 

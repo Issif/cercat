@@ -11,14 +11,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// AttachmentField
+// AttachmentField represents a field in Attachment
 type AttachmentField struct {
 	Title string `json:"title"`
 	Value string `json:"value"`
 	Short bool   `json:"short"`
 }
 
-// Attachment
+// Attachment represents Attachment of a Slack message
 type Attachment struct {
 	Color  string            `json:"color"`
 	Text   string            `json:"text,omitempty"`
@@ -67,6 +67,11 @@ func NewPayload(config *config.Configuration, r *model.Result) Payload {
 	field.Title = "Addresses"
 	field.Short = false
 	field.Value = strings.Join(r.Addresses, ", ")
+	fields = append(fields, field)
+
+	field.Title = "Attack"
+	field.Short = false
+	field.Value = r.Attack
 	fields = append(fields, field)
 
 	attachment.Fields = fields
