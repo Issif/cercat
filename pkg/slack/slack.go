@@ -52,6 +52,11 @@ func NewPayload(config *config.Configuration, r *model.Result) Payload {
 	field.Short = true
 	fields = append(fields, field)
 
+	field.Title = "Attack"
+	field.Short = true
+	field.Value = r.Attack
+	fields = append(fields, field)
+
 	if r.IDN != "" {
 		field.Title = "IDN"
 		field.Value = r.IDN
@@ -67,11 +72,6 @@ func NewPayload(config *config.Configuration, r *model.Result) Payload {
 	field.Title = "Addresses"
 	field.Short = false
 	field.Value = strings.Join(r.Addresses, ", ")
-	fields = append(fields, field)
-
-	field.Title = "Attack"
-	field.Short = false
-	field.Value = r.Attack
 	fields = append(fields, field)
 
 	attachment.Fields = fields
