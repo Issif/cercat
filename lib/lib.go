@@ -8,7 +8,6 @@ import (
 	"context"
 	"encoding/json"
 	"net"
-	"regexp"
 	"strings"
 	"time"
 
@@ -22,10 +21,10 @@ import (
 const certInput = "wss://certstream.calidog.io"
 
 // CertCheckWorker parses certificates and raises alert if matches config
-func CertCheckWorker(msgChan chan []byte, bufferChan chan *model.Result, regexp map[string][]*regexp.Regexp, homoglyphs *map[string]string) {
+func CertCheckWorker(config *config.Configuration) {
 	for {
-		msg := <-msgChan
-		result, err := ParseResultCertificate(msg, homoglyphs)
+		msg := <-config.Messages
+		result, err := ParseResultCertificate(msg, &config.HomoglyphPatterns)
 		if err != nil {
 			log.Warnf("Error parsing message: %s", err)
 			continue
@@ -33,8 +32,9 @@ func CertCheckWorker(msgChan chan []byte, bufferChan chan *model.Result, regexp 
 		if result == nil {
 			continue
 		}
-		if IsMatchingCert(result, regexp) {
-			bufferChan <- result
+		if match, attack := IsMatchingCert(result, config); match {
+			result.Attack = attack
+			config.Buffer <- result
 		}
 	}
 }
@@ -98,19 +98,45 @@ func isIDN(domain string) bool {
 }
 
 // IsMatchingCert checks if certificate matches the regexp
-func IsMatchingCert(result *model.Result, regexp map[string][]*regexp.Regexp) bool {
-	domainList := append(result.SAN, result.Domain)
+func IsMatchingCert(result *model.Result, config *config.Configuration) (bool, string) {
+	domainsToCheck := []string{}
+	var attack string
 	if len(result.UnicodeIDN) != 0 {
-		domainList = append(domainList, result.UnicodeIDN)
+		domainsToCheck = append(domainsToCheck, result.UnicodeIDN)
+		attack = "homoglyph + "
+	} else {
+		domainsToCheck = append([]string{result.Domain}, result.SAN...)
 	}
-	for _, domain := range domainList {
-		domain = strings.ReplaceAll(domain, ".", "")
-		for _, i := range regexp {
-			for _, j := range i {
-				if j.Match([]byte(domain)) {
-					return true
-				}
+	for _, i := range config.Domains {
+		for _, domain := range domainsToCheck {
+			cleanedDomain := strings.ReplaceAll(strings.ReplaceAll(domain, "-", ""), ".", "")
+			if isContained(cleanedDomain, config.InclusionPatterns[i]) {
+				return true, attack + "inclusion"
 			}
+			if isContained(cleanedDomain, config.VowelSwapPatterns[i]) {
+				return true, attack + "vowelswap"
+			}
+			if isContained(cleanedDomain, config.RepetitionPatterns[i]) {
+				return true, attack + "repetition"
+			}
+			if isContained(cleanedDomain, config.TranspositionPatterns[i]) {
+				return true, attack + "transposition"
+			}
+			if isContained(cleanedDomain, config.OmissionPatterns[i]) {
+				return true, attack + "omission"
+			}
+			if isContained(cleanedDomain, config.BitsquattingPatterns[i]) {
+				return true, attack + "bitsquatting"
+			}
+		}
+	}
+	return false, ""
+}
+
+func isContained(domain string, patterns []string) bool {
+	for _, i := range patterns {
+		if strings.Contains(domain, i) {
+			return true
 		}
 	}
 	return false

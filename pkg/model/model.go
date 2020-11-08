@@ -8,6 +8,7 @@ type Result struct {
 	SAN        []string `json:"SAN"`
 	Issuer     string   `json:"issuer"`
 	Addresses  []string `json:"Addresses"`
+	Attack     string   `json:"Attack"`
 }
 
 // Certificate represents a certificate from CertStream
