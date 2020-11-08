@@ -120,9 +120,9 @@ func IsMatchingCert(result *model.Result, config *config.Configuration) (bool, s
 			if isContained(cleanedDomain, config.TranspositionPatterns[i]) {
 				return true, attack + "transposition"
 			}
-			if isContained(cleanedDomain, config.OmissionPatterns[i]) {
-				return true, attack + "omission"
-			}
+			// if isContained(cleanedDomain, config.OmissionPatterns[i]) {
+			// 	return true, attack + "omission"
+			// }
 			if isContained(cleanedDomain, config.BitsquattingPatterns[i]) {
 				return true, attack + "bitsquatting"
 			}
