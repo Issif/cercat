@@ -9,7 +9,7 @@ WORKDIR /src
 ADD . .
 
 RUN go mod download
-RUN go build -ldflags="-s -w" -o cercat ./cmd/cercat
+RUN go build -ldflags="-s -w" -o cercat ./cmd/
 
 # Final Docker image
 FROM alpine AS final-stage
