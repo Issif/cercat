@@ -54,10 +54,11 @@ func ParseResultCertificate(msg []byte) (*model.Result, error) {
 
 	r = &model.Result{
 		Domain:    c.Data.LeafCert.Subject["CN"],
-		Issuer:    c.Data.Chain[0].Subject["O"],
+		Issuer:    c.Data.LeafCert.Issuer["O"],
 		SAN:       c.Data.LeafCert.AllDomains,
 		Addresses: []string{},
 	}
+
 	r.Addresses = fetchIPAddresses(r.Domain)
 	return r, nil
 }
@@ -123,7 +124,7 @@ func LoopCertStream(msgBuf chan []byte) {
 		if err != nil {
 			log.Warn("Error connecting to CertStream! Sleeping a few seconds and reconnecting...")
 			time.Sleep(1 * time.Second)
-			conn.Close()
+			// conn.Close()
 			continue
 		}
 		for {

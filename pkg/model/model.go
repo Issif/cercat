@@ -29,6 +29,7 @@ type Data struct {
 type LeafCert struct {
 	Subject      map[string]string      `json:"subject"`
 	Extensions   map[string]interface{} `json:"extensions"`
+	Issuer       map[string]string      `json:"issuer"`
 	NotBefore    float32                `json:"not_before"`
 	NotAfter     float32                `json:"not_after"`
 	SerialNumber string                 `json:"serial_number"`
