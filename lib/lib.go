@@ -32,8 +32,9 @@ func CertCheckWorker(config *config.Configuration) {
 		if result == nil {
 			continue
 		}
-		if match, attack := IsMatchingCert(result, config); match {
+		if match, attack, protectedDomain := IsMatchingCert(result, config); match {
 			result.Attack = attack
+			result.ProtectedDomain = protectedDomain
 			config.Buffer <- result
 		}
 	}
@@ -96,7 +97,7 @@ func isIDN(domain string) bool {
 }
 
 // IsMatchingCert checks if certificate matches the regexp
-func IsMatchingCert(result *model.Result, config *config.Configuration) (bool, string) {
+func IsMatchingCert(result *model.Result, config *config.Configuration) (bool, string, string) {
 	domainsToCheck := []string{}
 	var attack string
 	if len(result.UnicodeIDN) != 0 {
@@ -109,26 +110,26 @@ func IsMatchingCert(result *model.Result, config *config.Configuration) (bool, s
 		for _, domain := range domainsToCheck {
 			cleanedDomain := strings.ReplaceAll(strings.ReplaceAll(domain, "-", ""), ".", "")
 			if isContained(cleanedDomain, config.InclusionPatterns[i]) {
-				return true, attack + "inclusion"
+				return true, attack + "inclusion", i
 			}
 			if isContained(cleanedDomain, config.VowelSwapPatterns[i]) {
-				return true, attack + "vowelswap"
+				return true, attack + "vowelswap", i
 			}
 			if isContained(cleanedDomain, config.RepetitionPatterns[i]) {
-				return true, attack + "repetition"
+				return true, attack + "repetition", i
 			}
 			if isContained(cleanedDomain, config.TranspositionPatterns[i]) {
-				return true, attack + "transposition"
+				return true, attack + "transposition", i
 			}
 			// if isContained(cleanedDomain, config.OmissionPatterns[i]) {
-			// 	return true, attack + "omission"
+			// 	return true, attack + "omission", i
 			// }
 			if isContained(cleanedDomain, config.BitsquattingPatterns[i]) {
-				return true, attack + "bitsquatting"
+				return true, attack + "bitsquatting", i
 			}
 		}
 	}
-	return false, ""
+	return false, "", ""
 }
 
 func isContained(domain string, patterns []string) bool {

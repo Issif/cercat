@@ -87,12 +87,13 @@ func GetConfig(configFile *string) *Configuration {
 	for _, domain := range c.Domains {
 		p, _ := publicsuffix.PublicSuffix(domain)
 		s := strings.Split(strings.ReplaceAll(strings.ReplaceAll(domain, "."+p, ""), "-", ""), ".")
-		c.InclusionPatterns[domain] = []string{p, s[len(s)-1]}
+		c.InclusionPatterns[domain] = []string{s[len(s)-1]}
 		c.OmissionPatterns[domain] = omission.GetOmissionPatterns(s[len(s)-1])
 		c.RepetitionPatterns[domain] = repetition.GetRepetitionPatterns(s[len(s)-1])
 		c.BitsquattingPatterns[domain] = bitsquatting.GetBitsquattingPatterns(s[len(s)-1])
 		c.TranspositionPatterns[domain] = transposition.GetTranspositionPatterns(s[len(s)-1])
 		c.VowelSwapPatterns[domain] = vowelswap.GetVowelSwapPatterns(s[len(s)-1])
 	}
+
 	return c
 }
