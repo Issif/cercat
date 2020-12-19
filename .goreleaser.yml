@@ -1,8 +1,7 @@
 builds:
   - env:
       - CGO_ENABLED=0
-  - id: "cercat"
-    main: ./cmd
+  - main: ./cmd
     binary: cercat
     goos:
       - linux
