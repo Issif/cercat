@@ -38,6 +38,7 @@ func CertCheckWorker(r string, homoglyph *map[string]string, msgChan chan []byte
 		if !IsMatchingCert(homoglyph, result, reg) {
 			continue
 		}
+		result.Addresses = fetchIPAddresses(result.Domain)
 		bufferChan <- result
 	}
 }
@@ -59,7 +60,6 @@ func ParseResultCertificate(msg []byte) (*model.Result, error) {
 		Addresses: []string{},
 	}
 
-	r.Addresses = fetchIPAddresses(r.Domain)
 	return r, nil
 }
 
