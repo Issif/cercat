@@ -80,7 +80,6 @@ var _ = Describe("Handler", func() {
 				Expect(result.IDN).Should(Equal(""))
 				Expect(result.SAN).Should(Equal([]string{"baden-mueller.de", "www.baden-mueller.de"}))
 				Expect(result.Issuer).Should(Equal("Let's Encrypt"))
-				Expect(result.Addresses).Should(Equal([]string{"23.236.62.147"}))
 				Expect(err).ToNot(HaveOccurred())
 			})
 		})

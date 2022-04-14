@@ -64,6 +64,15 @@
         "subjectAltName": "DNS:www.baden-mueller.de, DNS:baden-mueller.de",
         "subjectKeyIdentifier": "4F:11:F2:CC:31:BC:1E:B8:29:2F:15:A9:C0:9A:51:C3:05:A4:48:C0"
       },
+      "issuer": {
+        "C": "US",
+        "CN": "Let's Encrypt Authority X3",
+        "L": null,
+        "O": "Let's Encrypt",
+        "OU": null,
+        "ST": null,
+        "aggregated": "/C=US/CN=Let's Encrypt Authority X3/O=Let's Encrypt"
+      },
       "fingerprint": "64:BF:49:41:3B:7A:FD:5D:C1:04:D9:44:64:9D:1C:25:13:A2:49:86",
       "not_after": 1598120268,
       "not_before": 1590344268,
