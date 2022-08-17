@@ -6,7 +6,7 @@ import (
 	"cercat/pkg/homoglyph"
 	"cercat/pkg/model"
 	"cercat/pkg/slack"
-	"io/ioutil"
+	"os"
 	"regexp"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -45,7 +45,7 @@ var _ = Describe("Handler", func() {
 		})
 	})
 	Describe("postToSlack", func() {
-		msg, _ := ioutil.ReadFile("../res/cert.json")
+		msg, _ := os.ReadFile("../res/cert.json")
 		It("should return a valid payload", func() {
 			result, err := lib.ParseResultCertificate(msg)
 			slackPayload := slack.NewPayload(config, result)
@@ -65,7 +65,7 @@ var _ = Describe("Handler", func() {
 			})
 		})
 		Describe("If message is heartbeat", func() {
-			msg, _ := ioutil.ReadFile("../res/heartbeat.json")
+			msg, _ := os.ReadFile("../res/heartbeat.json")
 			It("should return nil", func() {
 				result, err := lib.ParseResultCertificate(msg)
 				Expect(result).To(BeNil())
@@ -73,7 +73,7 @@ var _ = Describe("Handler", func() {
 			})
 		})
 		Describe("If message is regular", func() {
-			msg, _ := ioutil.ReadFile("../res/cert.json")
+			msg, _ := os.ReadFile("../res/cert.json")
 			It("should return valid infos", func() {
 				result, err := lib.ParseResultCertificate(msg)
 				Expect(result.Domain).Should(Equal("baden-mueller.de"))
@@ -84,7 +84,7 @@ var _ = Describe("Handler", func() {
 			})
 		})
 		Describe("If message is for IDN", func() {
-			msg, _ := ioutil.ReadFile("../res/cert_idn.json")
+			msg, _ := os.ReadFile("../res/cert_idn.json")
 			It("should return valid infos", func() {
 				result, err := lib.ParseResultCertificate(msg)
 				lib.IsMatchingCert(&config.Homoglyph, result, reg)
