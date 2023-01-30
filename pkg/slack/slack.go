@@ -20,9 +20,10 @@ type AttachmentField struct {
 
 // Attachment
 type Attachment struct {
-	Color  string            `json:"color"`
-	Text   string            `json:"text,omitempty"`
-	Fields []AttachmentField `json:"fields"`
+	Color    string            `json:"color"`
+	Text     string            `json:"text,omitempty"`
+	ImageURL string            `json:"image_url,omitempty"`
+	Fields   []AttachmentField `json:"fields"`
 	// Footer     string                 `json:"footer,omitempty"`
 	// FooterIcon string                 `json:"footer_icon,omitempty"`
 }
@@ -72,6 +73,10 @@ func NewPayload(config *config.Configuration, r *model.Result) Payload {
 	attachment.Fields = fields
 
 	attachment.Color = "#ff5400"
+
+	if r.Screenshot != "" {
+		attachment.ImageURL = r.Screenshot
+	}
 
 	attachments = append(attachments, attachment)
 

@@ -14,16 +14,17 @@ import (
 
 // Configuration represents a configuration element
 type Configuration struct {
-	Workers         int
-	SlackWebHookURL string
-	SlackIconURL    string
-	SlackUsername   string
-	RegIP           string
-	Regexp          string
-	PreviousCerts   *ring.Ring
-	Messages        chan []byte
-	Buffer          chan *model.Result
-	Homoglyph       map[string]string
+	Workers           int
+	SlackWebHookURL   string
+	SlackIconURL      string
+	SlackUsername     string
+	RegIP             string
+	Regexp            string
+	PreviousCerts     *ring.Ring
+	Messages          chan []byte
+	Buffer            chan *model.Result
+	Homoglyph         map[string]string
+	ScreenshotsFolder string
 }
 
 // GetConfig provides a Configuration

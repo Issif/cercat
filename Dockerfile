@@ -12,13 +12,18 @@ RUN go mod download
 RUN go build -ldflags="-s -w" -o cercat ./cmd/
 
 # Final Docker image
-FROM alpine AS final-stage
+FROM chromedp/headless-shell:latest
 LABEL MAINTAINER "Thomas Labarussias <issif+github@gadz.org>"
 
-RUN apk add --no-cache ca-certificates
+RUN export DEBIAN_FRONTEND=noninteractive \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends \
+    dumb-init ca-certificates \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 
 # Create user cercat
-RUN addgroup -S cercat && adduser -u 1234 -S cercat -G cercat
+RUN groupadd --gid 1234 cercat && adduser --uid 1234 --gid 1234 --shell /bin/sh cercat
 USER 1234
 
 WORKDIR ${HOME}/

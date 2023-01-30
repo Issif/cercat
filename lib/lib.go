@@ -7,11 +7,15 @@ import (
 	"cercat/pkg/slack"
 	"context"
 	"encoding/json"
+	"io/ioutil"
 	"net"
+	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/chromedp/chromedp"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	log "github.com/sirupsen/logrus"
@@ -39,6 +43,7 @@ func CertCheckWorker(r string, homoglyph *map[string]string, msgChan chan []byte
 			continue
 		}
 		result.Addresses = fetchIPAddresses(result.Domain)
+		result.Screenshot = takeScreenshot(result.Domain, result.SAN)
 		bufferChan <- result
 	}
 }
@@ -122,6 +127,7 @@ func LoopCertStream(msgBuf chan []byte) {
 		// conn, _, _, err := ws.DefaultDialer.Dial(context.Background(), certInput)
 		conn, _, _, err := dial.Dial(context.Background(), certInput)
 		if err != nil {
+			log.Warn(err)
 			log.Warn("Error connecting to CertStream! Sleeping a few seconds and reconnecting...")
 			time.Sleep(1 * time.Second)
 			// conn.Close()
@@ -161,4 +167,118 @@ func Notifier(cfg *config.Configuration) {
 			}
 		}
 	}
+}
+
+// takeScreenshot takes a screenshot
+func takeScreenshot(domain string, san []string) string {
+	domains := []string{domain}
+	domains = append(domains, san...)
+	for _, i := range domains {
+		if strings.Contains(i, "*") {
+			continue
+		}
+		domain = i
+		break
+	}
+
+	if strings.Contains(domain, "*") {
+		return ""
+	}
+
+	domain = getFinaleURL(domain)
+
+	if domain == "" {
+		return ""
+	}
+
+	quality := 90
+
+	opts := []chromedp.ExecAllocatorOption{
+		chromedp.NoFirstRun,
+		chromedp.NoDefaultBrowserCheck,
+		chromedp.Headless,
+		chromedp.NoSandbox,
+		chromedp.DisableGPU,
+		chromedp.WindowSize(1920, 1080),
+		chromedp.IgnoreCertErrors,
+		chromedp.NoDefaultBrowserCheck,
+	}
+	allocCtx, acancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	defer acancel()
+
+	folder := "/tmp/"
+	ctx, cancel := chromedp.NewContext(
+		allocCtx,
+		// chromedp.WithDebugf(log.Printf),
+	)
+	defer cancel()
+
+	var buf []byte
+	err := chromedp.Run(
+		ctx,
+		chromedp.Tasks{
+			chromedp.Navigate("https://" + domain),
+			chromedp.FullScreenshot(&buf, quality),
+		},
+	)
+	if err != nil {
+		log.Warnf("Can't take a screenshot of domain '%v': %v", domain, err)
+		return ""
+	}
+	if err = ioutil.WriteFile(folder+domain+".png", buf, 0o644); err != nil {
+		log.Warnf("Can't write the .png of the screenshot of domain '%v': %v", domain, err)
+		return ""
+	}
+	log.Infof("Screenshot taken for domain '%v'", domain)
+
+	file, err := os.Open(folder + domain + ".png")
+	if err != nil {
+		log.Warnf("Can't open the screenshot of domain '%v': %v\n", domain, err)
+		return ""
+	}
+	defer file.Close()
+
+	req, err := http.NewRequest("PUT", "https://transfer.sh/"+domain+".png", file)
+	if err != nil {
+		log.Warnf("Can't upload the screenshot of domain '%v': %v", domain, err)
+		return ""
+	}
+	req.Header.Set("Content-Type", "image/png")
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		log.Warnf("Can't upload the screenshot of domain '%v': %v", domain, err)
+		return ""
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode != http.StatusOK {
+		return ""
+	}
+
+	message, _ := ioutil.ReadAll(res.Body)
+	return string(message)
+}
+
+// check if the website is online and if a redirect is required
+func getFinaleURL(url string) string {
+	res, err := http.Get("https://" + url)
+	if err != nil {
+		return ""
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode == http.StatusTemporaryRedirect || res.StatusCode == http.StatusPermanentRedirect {
+		if loc, err := res.Location(); err == nil && loc != nil {
+			return getFinaleURL(strings.TrimPrefix(loc.String(), "https://"))
+		}
+		return ""
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return ""
+	}
+
+	return url
 }
