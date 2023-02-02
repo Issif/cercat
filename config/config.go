@@ -20,6 +20,7 @@ type Configuration struct {
 	SlackUsername     string
 	RegIP             string
 	Regexp            string
+	RegexpC           *regexp.Regexp
 	PreviousCerts     *ring.Ring
 	Messages          chan []byte
 	Buffer            chan *model.Result
@@ -27,8 +28,8 @@ type Configuration struct {
 	ScreenshotsFolder string
 }
 
-// GetConfig provides a Configuration
-func GetConfig(configFile *string) *Configuration {
+// CreateConfig provides a Configuration
+func CreateConfig(configFile *string) *Configuration {
 	c := &Configuration{
 		Workers:       50,
 		Homoglyph:     homoglyph.GetHomoglyphMap(),
@@ -67,9 +68,11 @@ func GetConfig(configFile *string) *Configuration {
 		log.Fatal("Regexp can't be empty")
 	}
 
-	if _, err := regexp.Compile(c.Regexp); err != nil {
+	reg, err := regexp.Compile(c.Regexp)
+	if err != nil {
 		log.Fatal("Bad regexp")
 	}
+	c.RegexpC = reg
 
 	return c
 }

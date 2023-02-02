@@ -2,12 +2,14 @@ package model
 
 // Result represents a catched certificate
 type Result struct {
-	Domain     string   `json:"domain"`
-	IDN        string   `json:"IDN,omitempty"`
-	SAN        []string `json:"SAN"`
-	Issuer     string   `json:"issuer"`
-	Addresses  []string `json:"Addresses"`
-	Screenshot string   `json:"Screenshot,omitempty"`
+	Domain       string   `json:"domain"`
+	IDN          string   `json:"IDN,omitempty"`
+	SAN          []string `json:"SAN"`
+	Issuer       string   `json:"issuer"`
+	Registrar    string   `json:"registrar,omitempty"`
+	CreationDate string   `json:"creation_date,omitempty"`
+	Addresses    []string `json:"addresses"`
+	Screenshot   string   `json:"screenshot,omitempty"`
 }
 
 // Certificate represents a certificate from CertStream
