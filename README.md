@@ -27,12 +27,17 @@ Two methods are available for configuration and can be mixed :
 
 ### With config file
 
+The available settings are:
 ```bash
 ---
-SlackWebhookURL: "" #Slack Webhook URL
-SlackIconURL: "" #Slack Icon (Avatar) URL
-SlackUsername: "" #Slack Username
-Regexp: ".*\\.fr$" #Regexp to match. Can't be empty. It uses Golang regexp format
+SlackWebhookURL: "" # Slack Webhook URL
+SlackIconURL: "" # Slack Icon (Avatar) URL
+SlackUsername: "Cercat" # Slack Username
+Regexp: ".*\\.fr$" # Regexp to match. Can't be empty. It uses Golang regexp format
+Workers: 20 # Number of workers to compare the certificates with the Regexp
+TakeScreenshot: false # Try to take a screenshot of the website
+ScreenshotsFolder: "." # Folder to store the screenshots
+IgnoreOlderThan: 10 # Ignore domains older than
 ```
 
 ### With env vars
@@ -41,6 +46,10 @@ Regexp: ".*\\.fr$" #Regexp to match. Can't be empty. It uses Golang regexp forma
 - **SLACKICONURL**: Slack Icon (Avatar) URL
 - **SLACKUSERNAME**: Slack Username
 - **REGEXP**: Regexp to match. Can't be empty. It uses Golang regexp format
+- **WORKERS**: Number of workers to compare the certificates with the Regexp
+- **TAKESCREENSHOT**: Try to take a screenshot of the website
+- **SCREENSHOTSFOLDER**: Folder to store the screenshots
+- **IGNOREOLDERTHAN**: Ignore domains older than
 
 ## Run
 

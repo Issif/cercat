@@ -4,11 +4,12 @@ import (
 	"cercat/pkg/homoglyph"
 	"cercat/pkg/model"
 	"container/ring"
+	"os"
 	"path"
 	"path/filepath"
 	"regexp"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -18,14 +19,17 @@ type Configuration struct {
 	SlackWebHookURL   string
 	SlackIconURL      string
 	SlackUsername     string
-	RegIP             string
 	Regexp            string
+	ScreenshotsFolder string
+	TakeScreenshot    bool
+	IgnoreOlderThan   int
+	RegIP             string
 	RegexpC           *regexp.Regexp
 	PreviousCerts     *ring.Ring
 	Messages          chan []byte
 	Buffer            chan *model.Result
 	Homoglyph         map[string]string
-	ScreenshotsFolder string
+	Log               *logrus.Logger
 }
 
 // CreateConfig provides a Configuration
@@ -34,9 +38,16 @@ func CreateConfig(configFile *string) *Configuration {
 		Workers:       50,
 		Homoglyph:     homoglyph.GetHomoglyphMap(),
 		PreviousCerts: ring.New(20),
-		Messages:      make(chan []byte, 50),
-		Buffer:        make(chan *model.Result, 50),
+		Messages:      make(chan []byte, 100),
+		Buffer:        make(chan *model.Result, 100),
+		Log:           logrus.New(),
 	}
+
+	c.Log.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02 15:04:05",
+	})
+	c.Log.SetOutput(os.Stdout)
 
 	v := viper.New()
 	v.SetDefault("SlackWebhookURL", "")
@@ -44,6 +55,9 @@ func CreateConfig(configFile *string) *Configuration {
 	v.SetDefault("SlackUsername", "Cercat")
 	v.SetDefault("Regexp", "")
 	v.SetDefault("Workers", 20)
+	v.SetDefault("TakeScreenshot", false)
+	v.SetDefault("ScreenshotsFolder", ".")
+	v.SetDefault("IgnoreOlderThan", 10)
 
 	if *configFile != "" {
 		d, f := path.Split(*configFile)
@@ -54,7 +68,7 @@ func CreateConfig(configFile *string) *Configuration {
 		v.AddConfigPath(d)
 		err := v.ReadInConfig()
 		if err != nil {
-			log.Fatalf("[ERROR] : Error when reading config file : %v\n", err)
+			c.Log.Fatalf("[ERROR] : Error when reading config file : %v\n", err)
 		}
 	}
 	v.AutomaticEnv()
@@ -65,14 +79,13 @@ func CreateConfig(configFile *string) *Configuration {
 	}
 
 	if c.Regexp == "" {
-		log.Fatal("Regexp can't be empty")
+		c.Log.Fatal("Regexp can't be empty")
 	}
 
 	reg, err := regexp.Compile(c.Regexp)
 	if err != nil {
-		log.Fatal("Bad regexp")
+		c.Log.Fatal("Bad regexp")
 	}
 	c.RegexpC = reg
-
 	return c
 }

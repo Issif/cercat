@@ -7,12 +7,13 @@ import (
 	"cercat/pkg/screenshot"
 	"encoding/json"
 	"net"
+	"strconv"
 	"strings"
+	"time"
 
 	tld "github.com/jpillora/go-tld"
 	"github.com/likexian/whois"
 	whoisparser "github.com/likexian/whois-parser"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/idna"
 )
 
@@ -22,7 +23,7 @@ func RunCertCheckWorker(cfg *config.Configuration) {
 		msg := <-cfg.Messages
 		result, err := parseResultCertificate(msg)
 		if err != nil {
-			log.Warnf("Error parsing message: %s", err)
+			cfg.Log.Warnf("Error parsing message: %s", err)
 			continue
 		}
 		if result == nil {
@@ -42,11 +43,23 @@ func RunCertCheckWorker(cfg *config.Configuration) {
 			break
 		}
 		if domain != "" && !strings.Contains(domain, "*") {
-			result.Addresses = fetchIPv4Addresses(domain)
-			result.Screenshot = screenshot.TakeScreenshot(domain)
-			result.Registrar, result.CreationDate = getWhoIs(result.Domain)
+			result.Registrar, result.CreationDate = getWhoIs(result.Domain, cfg)
+			if result.CreationDate == "" {
+				continue
+			}
+			creationDate := strings.Split(result.CreationDate, "-")
+			if len(creationDate) < 3 {
+				continue
+			}
+			if time.Since(date(creationDate[0], creationDate[1], creationDate[2])).Hours()/24 > float64(cfg.IgnoreOlderThan) {
+				continue
+			}
+			result.Addresses = fetchIPv4Addresses(domain, cfg)
+			if cfg.TakeScreenshot {
+				result.Screenshot = screenshot.TakeScreenshot(domain, cfg)
+			}
+			cfg.Buffer <- result
 		}
-		cfg.Buffer <- result
 	}
 }
 
@@ -76,12 +89,12 @@ func isIPv4Net(host string) bool {
 }
 
 // fetchIPv4Addresses resolves domain to get IP
-func fetchIPv4Addresses(domain string) []string {
+func fetchIPv4Addresses(domain string, cfg *config.Configuration) []string {
 	var ipsList []string
 
 	ips, err := net.LookupIP(domain)
 	if err != nil || len(ips) == 0 {
-		log.Debugf("Could not fetch IPv4 addresses of domain %s", domain)
+		cfg.Log.Debugf("Could not fetch IPv4 addresses of domain %s", domain)
 		return ipsList
 	}
 	for _, j := range ips {
@@ -119,27 +132,35 @@ func isMatchingCert(cfg *config.Configuration, result *model.Result) bool {
 }
 
 // getWhoIs gets domain WHOIS details
-func getWhoIs(domain string) (registrar, creationDate string) {
+func getWhoIs(domain string, cfg *config.Configuration) (registrar, creationDate string) {
 	u, err := tld.Parse("https://" + domain)
 	if u == nil || err != nil {
 		return "", ""
 	}
 	if u.Domain == "" || u.TLD == "" {
-		log.Warningf("Could not get WHOIS details of domain %s", domain)
+		cfg.Log.Warningf("Could not get WHOIS details of domain %s", domain)
 		return "", ""
 	}
 	whoisRaw, err := whois.Whois(u.Domain + "." + u.TLD)
 	if err != nil {
-		log.Warningf("Could not get WHOIS details of domain %s: %v", domain, err)
+		cfg.Log.Warningf("Could not get WHOIS details of domain %s: %v", domain, err)
 		return "", ""
 	}
 	result, err := whoisparser.Parse(whoisRaw)
 	if err != nil {
-		log.Warningf("Could not parse WHOIS details of domain %s: %v", domain, err)
+		cfg.Log.Warningf("Could not parse WHOIS details of domain %s: %v", domain, err)
 		return "", ""
 	}
 	if result.Registrar == nil || result.Domain == nil {
 		return "", ""
 	}
-	return result.Registrar.Name, result.Domain.CreatedDate
+	return result.Registrar.Name, strings.Split(result.Domain.CreatedDate, "T")[0]
+}
+
+// date return a time.Time
+func date(year, month, day string) time.Time {
+	y, _ := strconv.Atoi(year)
+	m, _ := strconv.Atoi(month)
+	d, _ := strconv.Atoi(day)
+	return time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.UTC)
 }

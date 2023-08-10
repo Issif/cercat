@@ -6,7 +6,6 @@ import (
 	"cercat/pkg/model"
 	"cercat/pkg/slack"
 	"cercat/pkg/worker"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -16,7 +15,6 @@ import (
 
 	"github.com/arl/statsviz"
 	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -38,6 +36,7 @@ func main() {
 	}
 
 	cfg := config.CreateConfig(configFile)
+	// fmt.Printf("%#v\n", cfg)
 	for i := 0; i < cfg.Workers; i++ {
 		go worker.RunCertCheckWorker(cfg)
 	}
@@ -58,8 +57,8 @@ func runNotifierWorker(cfg *config.Configuration) {
 		if !duplicate {
 			cfg.PreviousCerts = cfg.PreviousCerts.Prev()
 			cfg.PreviousCerts.Value = result.Domain
-			j, _ := json.Marshal(result)
-			log.Infof("A certificate for '%v' has been issued : %v\n", result.Domain, string(j))
+			// j, _ := json.Marshal(result)
+			cfg.Log.Infof("A certificate for '%v' has been issued by %v\n", result.Domain, result.Registrar)
 			if cfg.SlackWebHookURL != "" {
 				go func(c *config.Configuration, r *model.Result) {
 					slack.NewPayload(c, result).Post(c)

@@ -1,18 +1,18 @@
 package screenshot
 
 import (
+	"cercat/config"
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/chromedp/chromedp"
-	log "github.com/sirupsen/logrus"
 )
 
 // TakeScreenshot takes a screenshot, uploads it and return the URL
-func TakeScreenshot(domain string) string {
+func TakeScreenshot(domain string, cfg *config.Configuration) string {
 	url := getFinaleURL(domain)
 
 	if url == "" {
@@ -35,10 +35,10 @@ func TakeScreenshot(domain string) string {
 	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
 	defer allocCancel()
 
-	folder := "/tmp/"
+	folder := cfg.ScreenshotsFolder
 	browserCtx, browserCancel := chromedp.NewContext(
 		allocCtx,
-		// chromedp.WithDebugf(log.Printf),
+		// chromedp.WithDebugf(cfg.Log.Printf),
 	)
 	defer browserCancel()
 
@@ -55,30 +55,30 @@ func TakeScreenshot(domain string) string {
 		},
 	)
 	if err != nil {
-		log.Warnf("Can't take a screenshot of domain '%v': %v", domain, err)
+		cfg.Log.Warnf("Can't take a screenshot of domain '%v': %v", domain, err)
 		return ""
 	}
-	if err = ioutil.WriteFile(folder+domain+".png", buf, 0o644); err != nil {
-		log.Warnf("Can't write the .png of the screenshot of domain '%v': %v", domain, err)
+	if err = os.WriteFile(folder+domain+".png", buf, 0o644); err != nil {
+		cfg.Log.Warnf("Can't write the .png of the screenshot of domain '%v': %v", domain, err)
 		return ""
 	}
-	log.Infof("Screenshot taken for domain '%v'", domain)
+	cfg.Log.Infof("Screenshot taken for domain '%v'", domain)
 
 	file, err := os.Open(folder + domain + ".png")
 	if err != nil {
-		log.Warnf("Can't open the screenshot of domain '%v': %v\n", domain, err)
+		cfg.Log.Warnf("Can't open the screenshot of domain '%v': %v\n", domain, err)
 		return ""
 	}
-	// defer func() {
-	// 	if err := os.Remove(folder + domain + ".png"); err != nil {
-	// 		log.Warnf("Can't delete the screenshot file %v%v.png: %v\n", folder, domain, err)
-	// 	}
-	// }()
+	defer func() {
+		if err := os.Remove(folder + domain + ".png"); err != nil {
+			cfg.Log.Warnf("Can't delete the screenshot file %v%v.png: %v\n", folder, domain, err)
+		}
+	}()
 	defer file.Close()
 
 	req, err := http.NewRequest("PUT", "https://transfer.sh/"+domain+".png", file)
 	if err != nil {
-		log.Warnf("Can't upload the screenshot of domain '%v': %v", domain, err)
+		cfg.Log.Warnf("Can't upload the screenshot of domain '%v': %v", domain, err)
 		return ""
 	}
 	req.Header.Set("Content-Type", "image/png")
@@ -86,7 +86,7 @@ func TakeScreenshot(domain string) string {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		log.Warnf("Can't upload the screenshot of domain '%v': %v", domain, err)
+		cfg.Log.Warnf("Can't upload the screenshot of domain '%v': %v", domain, err)
 		return ""
 	}
 	defer res.Body.Close()
@@ -95,7 +95,7 @@ func TakeScreenshot(domain string) string {
 		return ""
 	}
 
-	message, _ := ioutil.ReadAll(res.Body)
+	message, _ := io.ReadAll(res.Body)
 	return string(message)
 }
 

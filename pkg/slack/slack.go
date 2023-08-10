@@ -7,8 +7,6 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // AttachmentField
@@ -37,7 +35,7 @@ type Payload struct {
 }
 
 // NewPayload generates a new Slack Payload
-func NewPayload(config *config.Configuration, r *model.Result) Payload {
+func NewPayload(cfg *config.Configuration, r *model.Result) Payload {
 	var attachments []Attachment
 	var attachment Attachment
 	var fields []AttachmentField
@@ -61,7 +59,7 @@ func NewPayload(config *config.Configuration, r *model.Result) Payload {
 	}
 
 	if r.CreationDate != "" {
-		field.Title = "Creation Date"
+		field.Title = "Domain Creation Date"
 		field.Value = r.CreationDate
 		field.Short = true
 		fields = append(fields, field)
@@ -101,20 +99,20 @@ func NewPayload(config *config.Configuration, r *model.Result) Payload {
 
 	return Payload{
 		Text:        "A certificate for " + domain + " has been issued",
-		Username:    config.SlackUsername,
-		IconURL:     config.SlackIconURL,
+		Username:    cfg.SlackUsername,
+		IconURL:     cfg.SlackIconURL,
 		Attachments: attachments,
 	}
 }
 
 // Post posts to Slack a Payload
-func (s Payload) Post(config *config.Configuration) {
+func (s Payload) Post(cfg *config.Configuration) {
 	body, _ := json.Marshal(s)
-	req, _ := http.NewRequest(http.MethodPost, config.SlackWebHookURL, bytes.NewBuffer(body))
+	req, _ := http.NewRequest(http.MethodPost, cfg.SlackWebHookURL, bytes.NewBuffer(body))
 	req.Header.Add("Content-Type", "application/json")
 	client := &http.Client{}
 	_, err := client.Do(req)
 	if err != nil {
-		log.Warn("Slack Post error")
+		cfg.Log.Warn("Slack Post error")
 	}
 }
