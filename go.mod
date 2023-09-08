@@ -9,8 +9,6 @@ require (
 	github.com/chromedp/chromedp v0.8.7
 	github.com/gobwas/ws v1.1.0
 	github.com/gorilla/websocket v1.5.0 // indirect
-	github.com/onsi/ginkgo/v2 v2.1.4
-	github.com/onsi/gomega v1.20.0
 	github.com/picatz/homoglyphr v0.0.0-20180114170158-6e9a0e190785
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.0
@@ -31,7 +29,6 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
-	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/likexian/gokit v0.25.9 // indirect
