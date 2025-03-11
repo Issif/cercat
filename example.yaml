@@ -1,5 +1,10 @@
 ---
-SlackWebhookURL: "" #Slack Webhook URL
-SlackIconURL: "" #Slack Icon (Avatar) URL
-SlackUsername: "" #Slack Username
-Regexp: ".*\\.fr$" #Regexp to match. Can't be empty. It uses Golang regexp format
+SlackWebhookURL: "" # Slack Webhook URL
+SlackIconURL: "" # Slack Icon (Avatar) URL
+SlackUsername: "Cercat" # Slack Username
+Regexp: ".*\\.fr$" # Regexp to match. Can't be empty. It uses Golang regexp format
+Workers: 20 # Number of workers to compare the certificates with the Regexp
+TakeScreenshot: false # Try to take a screenshot of the website
+ScreenshotsFolder: "." # Folder to store the screenshots
+IgnoreOlderThan: 10 # Ignore domains older than
+WrongLinksThreshold: 20 # Ignore domains with less broken links than

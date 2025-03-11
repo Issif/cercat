@@ -8,14 +8,13 @@ import (
 	"cercat/pkg/worker"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"path/filepath"
 
-	_ "net/http/pprof"
-
+	"github.com/alecthomas/kingpin"
 	"github.com/arl/statsviz"
 	"github.com/pkg/errors"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 func init() {
@@ -38,32 +37,25 @@ func main() {
 	cfg := config.CreateConfig(configFile)
 	// fmt.Printf("%#v\n", cfg)
 	for i := 0; i < cfg.Workers; i++ {
-		go worker.RunCertCheckWorker(cfg)
+		go worker.RunCertCheckWorker()
 	}
-	go runNotifierWorker(cfg)
-	certstream.StartLoopCertStream(cfg)
+	go runNotifierWorker()
+	certstream.StartLoopCertStream()
 }
 
 // runNotifierWorker is a worker that receives cert, depduplicates and sends to Slack the event
-func runNotifierWorker(cfg *config.Configuration) {
+func runNotifierWorker() {
+	cfg := config.GetConfig()
+
 	for {
 		result := <-cfg.Buffer
-		duplicate := false
-		cfg.PreviousCerts.Do(func(d interface{}) {
-			if result.Domain == d {
-				duplicate = true
-			}
-		})
-		if !duplicate {
-			cfg.PreviousCerts = cfg.PreviousCerts.Prev()
-			cfg.PreviousCerts.Value = result.Domain
-			// j, _ := json.Marshal(result)
-			cfg.Log.Infof("A certificate for '%v' has been issued by %v\n", result.Domain, result.Registrar)
-			if cfg.SlackWebHookURL != "" {
-				go func(c *config.Configuration, r *model.Result) {
-					slack.NewPayload(c, result).Post(c)
-				}(cfg, result)
-			}
+
+		// j, _ := json.Marshal(result)
+		cfg.Log.Infof("A %v phishing website '%v' has been detected\n", result.Status, result.Domain)
+		if cfg.SlackWebHookURL != "" {
+			go func(c *config.Configuration, r *model.Result) {
+				slack.NewPayload(c, result).Post(c)
+			}(cfg, result)
 		}
 	}
 }

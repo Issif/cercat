@@ -10,6 +10,8 @@ type Result struct {
 	CreationDate string   `json:"creation_date,omitempty"`
 	Addresses    []string `json:"addresses"`
 	Screenshot   string   `json:"screenshot,omitempty"`
+	Status       string   `json:"status,omitempty"`
+	Iteration    int      `json:"iteration,omitempty"`
 }
 
 // Certificate represents a certificate from CertStream

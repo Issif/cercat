@@ -5,6 +5,7 @@ import (
 	"cercat/config"
 	"cercat/pkg/model"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -82,9 +83,21 @@ func NewPayload(cfg *config.Configuration, r *model.Result) Payload {
 	field.Value = strings.Join(r.Addresses, ", ")
 	fields = append(fields, field)
 
+	if r.Status != "" {
+		field.Title = "Status"
+		field.Value = fmt.Sprintf("`%v`", r.Status)
+		field.Short = true
+		fields = append(fields, field)
+	}
+
 	attachment.Fields = fields
 
-	attachment.Color = "#ff5400"
+	switch r.Status {
+	case "confirmed":
+		attachment.Color = "#f40b0b"
+	case "suspicious":
+		attachment.Color = "#f1c00e"
+	}
 
 	if r.Screenshot != "" {
 		attachment.ImageURL = r.Screenshot

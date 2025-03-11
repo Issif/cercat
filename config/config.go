@@ -15,39 +15,50 @@ import (
 
 // Configuration represents a configuration element
 type Configuration struct {
-	Workers           int
-	SlackWebHookURL   string
-	SlackIconURL      string
-	SlackUsername     string
-	Regexp            string
-	ScreenshotsFolder string
-	TakeScreenshot    bool
-	IgnoreOlderThan   int
-	RegIP             string
-	RegexpC           *regexp.Regexp
-	PreviousCerts     *ring.Ring
-	Messages          chan []byte
-	Buffer            chan *model.Result
-	Homoglyph         map[string]string
-	Log               *logrus.Logger
+	Workers             int
+	SlackWebHookURL     string
+	SlackIconURL        string
+	SlackUsername       string
+	Regexp              string
+	ScreenshotsFolder   string
+	TakeScreenshot      bool
+	IgnoreOlderThan     int
+	WrongLinksThreshold int
+	RegIP               string
+	RegexpC             *regexp.Regexp
+	PreviousCerts       *ring.Ring
+	Messages            chan []byte
+	Buffer              chan *model.Result
+	Homoglyph           map[string]string
+	Log                 *logrus.Logger
+}
+
+var config *Configuration
+
+func init() {
+	config = new(Configuration)
+}
+
+func GetConfig() *Configuration {
+	return config
 }
 
 // CreateConfig provides a Configuration
 func CreateConfig(configFile *string) *Configuration {
-	c := &Configuration{
+	config = &Configuration{
 		Workers:       50,
 		Homoglyph:     homoglyph.GetHomoglyphMap(),
-		PreviousCerts: ring.New(20),
+		PreviousCerts: ring.New(200),
 		Messages:      make(chan []byte, 100),
 		Buffer:        make(chan *model.Result, 100),
 		Log:           logrus.New(),
 	}
 
-	c.Log.SetFormatter(&logrus.TextFormatter{
+	config.Log.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
-	c.Log.SetOutput(os.Stdout)
+	config.Log.SetOutput(os.Stdout)
 
 	v := viper.New()
 	v.SetDefault("SlackWebhookURL", "")
@@ -58,6 +69,7 @@ func CreateConfig(configFile *string) *Configuration {
 	v.SetDefault("TakeScreenshot", false)
 	v.SetDefault("ScreenshotsFolder", ".")
 	v.SetDefault("IgnoreOlderThan", 10)
+	v.SetDefault("WrongLinksThreshold", 20)
 
 	if *configFile != "" {
 		d, f := path.Split(*configFile)
@@ -68,24 +80,24 @@ func CreateConfig(configFile *string) *Configuration {
 		v.AddConfigPath(d)
 		err := v.ReadInConfig()
 		if err != nil {
-			c.Log.Fatalf("[ERROR] : Error when reading config file : %v\n", err)
+			config.Log.Fatalf("[ERROR] : Error when reading config file : %v\n", err)
 		}
 	}
 	v.AutomaticEnv()
-	v.Unmarshal(c)
+	v.Unmarshal(config)
 
-	if c.SlackUsername == "" {
-		c.SlackUsername = "Cercat"
+	if config.SlackUsername == "" {
+		config.SlackUsername = "Cercat"
 	}
 
-	if c.Regexp == "" {
-		c.Log.Fatal("Regexp can't be empty")
+	if config.Regexp == "" {
+		config.Log.Fatal("Regexp can't be empty")
 	}
 
-	reg, err := regexp.Compile(c.Regexp)
+	reg, err := regexp.Compile(config.Regexp)
 	if err != nil {
-		c.Log.Fatal("Bad regexp")
+		config.Log.Fatal("Bad regexp")
 	}
-	c.RegexpC = reg
-	return c
+	config.RegexpC = reg
+	return config
 }

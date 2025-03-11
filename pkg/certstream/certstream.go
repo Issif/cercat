@@ -15,7 +15,9 @@ import (
 const certInput = "wss://certstream.calidog.io"
 
 // StartLoopCertStream gathers messages from CertStream
-func StartLoopCertStream(cfg *config.Configuration) {
+func StartLoopCertStream() {
+	cfg := config.GetConfig()
+
 	dial := ws.Dialer{
 		ReadBufferSize:  2048,
 		WriteBufferSize: 128,

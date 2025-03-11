@@ -2,10 +2,13 @@ package worker
 
 import (
 	"cercat/config"
+	"cercat/pkg/collector"
 	"cercat/pkg/homoglyph"
 	"cercat/pkg/model"
 	"cercat/pkg/screenshot"
+	"cercat/pkg/utils"
 	"encoding/json"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -18,7 +21,9 @@ import (
 )
 
 // RunCertCheckWorker parses certificates and raises alert if matches config
-func RunCertCheckWorker(cfg *config.Configuration) {
+func RunCertCheckWorker() {
+	cfg := config.GetConfig()
+
 	for {
 		msg := <-cfg.Messages
 		result, err := parseResultCertificate(msg)
@@ -43,24 +48,58 @@ func RunCertCheckWorker(cfg *config.Configuration) {
 			break
 		}
 		if domain != "" && !strings.Contains(domain, "*") {
-			result.Registrar, result.CreationDate = getWhoIs(result.Domain, cfg)
-			if result.CreationDate == "" {
+			fmt.Println("++++ " + domain)
+			duplicate := false
+			cfg.PreviousCerts.Do(func(d interface{}) {
+				if result.Domain == d {
+					duplicate = true
+				}
+			})
+			if duplicate {
 				continue
 			}
-			creationDate := strings.Split(result.CreationDate, "-")
-			if len(creationDate) < 3 {
-				continue
-			}
-			if time.Since(date(creationDate[0], creationDate[1], creationDate[2])).Hours()/24 > float64(cfg.IgnoreOlderThan) {
-				continue
-			}
-			result.Addresses = fetchIPv4Addresses(domain, cfg)
-			if cfg.TakeScreenshot {
-				result.Screenshot = screenshot.TakeScreenshot(domain, cfg)
-			}
-			cfg.Buffer <- result
+			fmt.Println("----" + domain)
+			cfg.PreviousCerts = cfg.PreviousCerts.Next()
+			cfg.PreviousCerts.Value = result.Domain
+			analyzeDomain(domain, result)
 		}
 	}
+}
+
+func analyzeDomain(domain string, result *model.Result) {
+	cfg := config.GetConfig()
+
+	u := utils.GetFinaleURL(domain)
+	if u == nil {
+		return
+	}
+	result.Registrar, result.CreationDate = getWhoIs(result.Domain, cfg)
+	if result.CreationDate == "" {
+		return
+	}
+	creationDate := strings.Split(result.CreationDate, "-")
+	if len(creationDate) < 3 {
+		return
+	}
+	if time.Since(date(creationDate[0], creationDate[1], creationDate[2])).Hours()/24 > float64(cfg.IgnoreOlderThan) {
+		return
+	}
+	result.Status = collector.Visit(domain, u).GetStatus()
+	if result.Status == "" {
+		return
+	}
+	if result.Status == "suspicious" && result.Iteration < 10 {
+		go func() {
+			time.Sleep(20 * time.Second)
+			result.Iteration++
+			analyzeDomain(domain, result)
+		}()
+	}
+	result.Addresses = fetchIPv4Addresses(domain, cfg)
+	if cfg.TakeScreenshot {
+		result.Screenshot = screenshot.TakeScreenshot(domain, u)
+	}
+	cfg.Buffer <- result
 }
 
 // parseResultCertificate parses certificate details

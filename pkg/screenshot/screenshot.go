@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
@@ -12,12 +13,12 @@ import (
 )
 
 // TakeScreenshot takes a screenshot, uploads it and return the URL
-func TakeScreenshot(domain string, cfg *config.Configuration) string {
-	url := getFinaleURL(domain)
-
-	if url == "" {
+func TakeScreenshot(domain string, u *url.URL) string {
+	if u == nil {
 		return ""
 	}
+
+	cfg := config.GetConfig()
 
 	quality := 90
 
@@ -49,7 +50,7 @@ func TakeScreenshot(domain string, cfg *config.Configuration) string {
 	err := chromedp.Run(
 		tabCtx,
 		chromedp.Tasks{
-			chromedp.Navigate(url),
+			chromedp.Navigate(u.String()),
 			chromedp.Sleep(time.Second * 3),
 			chromedp.FullScreenshot(&buf, quality),
 		},
@@ -97,19 +98,4 @@ func TakeScreenshot(domain string, cfg *config.Configuration) string {
 
 	message, _ := io.ReadAll(res.Body)
 	return string(message)
-}
-
-// check if the website is online and if a redirect is required
-func getFinaleURL(domain string) string {
-	res, err := http.Get("https://" + domain)
-	if err != nil {
-		return ""
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		return ""
-	}
-
-	return res.Request.URL.String()
 }

@@ -38,6 +38,7 @@ Workers: 20 # Number of workers to compare the certificates with the Regexp
 TakeScreenshot: false # Try to take a screenshot of the website
 ScreenshotsFolder: "." # Folder to store the screenshots
 IgnoreOlderThan: 10 # Ignore domains older than
+WrongLinksThreshold: 20 # Ignore domains with less broken links than
 ```
 
 ### With env vars
@@ -50,6 +51,7 @@ IgnoreOlderThan: 10 # Ignore domains older than
 - **TAKESCREENSHOT**: Try to take a screenshot of the website
 - **SCREENSHOTSFOLDER**: Folder to store the screenshots
 - **IGNOREOLDERTHAN**: Ignore domains older than
+- **WRONGLINKSTHRESHOLD**: Ignore domains with less broken links than
 
 ## Run
 
@@ -72,8 +74,8 @@ docker run -d -e SLACKWEBHOOKURL=https://hooks.slack.com/services/XXXXX -e REGEX
 ## Logs
 
 ```bash
-INFO[0005] A certificate for 'xxxx.fr' has been issued : {"domain":"xxxx.fr","SAN":["xxxx.fr","www.xxxx.fr"],"issuer":"Let's Encrypt","Addresses":["X.X.X.129"]} 
-INFO[0008] A certificate for 'xxxx.fr' has been issued : {"domain":"xxxx.fr","SAN":["xxxx.fr","www.xxxx.fr"],"issuer":"Let's Encrypt","Addresses":["X.X.X.116"]} 
+INFO[2023-09-13 15:18:17] A suspicious phishing website 'xxxx.com' has been detected
+INFO[2023-09-13 15:18:17] A confirmed phishing website 'xxxx.fr' has been detected
 ```
 
 ## Profiles, Traces and Metrics
